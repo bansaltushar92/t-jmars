@@ -43,6 +43,12 @@ z = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
 s = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
 #s = np.zeros((U, M, I))
 
+#dev_t
+alpha_vu = np.random.normal(0,sigma_u,(U, K))
+alpha_bu = np.random.normal(0,sigma_u,(U, 1))
+alpha_tu = np.random.normal(0,sigma_u,(U, A))
+
+
 # User
 v_u = np.random.normal(0,sigma_u,(U, K))      # Latent factor vector
 b_u = np.random.normal(0,sigma_bu,(U, 1))      # Common bias vector

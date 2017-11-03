@@ -6,6 +6,13 @@ from scipy.optimize import fmin_l_bfgs_b
 from numpy import linalg as LA
 import numpy.matlib
 
+
+# define t_mean, beta?
+
+def dev_t(t, t_mean):
+    return np.sign(t-t_mean[u])*abs(t-t_mean[u])^beta
+
+
 def func(params, *args):
     """
     Computes the value of the objective function required for gradient descent
@@ -20,38 +27,111 @@ def func(params, *args):
     Numas = args[4]
     Numa = args[5]
 
-    v_u = params[:(U*K)].reshape((U,K), order='F')
-    b_u = params[(U*K):(U*K + U)].reshape((U,1), order='F')
-    theta_u = params[(U*K + U):(U*K + U + U*A)].reshape((U,A), order='F')
 
-    v_m = params[(U*K + U + U*A):(U*K + U + U*A + M*K)].reshape((M,K), order='F')
-    b_m = params[(U*K + U + U*A + M*K):(U*K + U + U*A + M*K + M)].reshape((M,1), order='F')
-    theta_m = params[(U*K + U + U*A + M*K + M):(U*K + U + U*A + M*K + M + M*A)].reshape((M,A), order='F')
+    t_mean = params[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K):].reshape((U,1), order='F')
 
-    M_a = params[(U*K + U + U*A + M*K + M + M*A):].reshape((A,K), order='F')
+    alpha_vu = params[:(U*K)].reshape((U,K), order='F')
+    v_ut = params[(U*K):2*(U*K)].reshape((U,K), order='F') + dev_t(t, t_mean)*alpha_vu
+    alpha_bu = params[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')                # change indices all after this.
+    b_ut = params[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F') + dev_t(t, t_mean)*alpha_bu
+    alpha_tu = params[2*(U*K) + 2*U:(2*(U*K) + 2*U + U*A)].reshape((U,A), order='F')
+    theta_ut = params[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F') + dev_t(t, t_mean)*alpha_tu
 
-    M_sum = np.diag(M_a.sum(0))
+    v_m = params[((2*U*K + 2*U + 2*U*A)):((2*U*K + 2*U + 2*U*A) + M*K)].reshape((M,K), order='F')
+    b_m = params[((2*U*K + 2*U + 2*U*A)+ M*K):((2*U*K + 2*U + 2*U*A) + M*K + M)].reshape((M,1), order='F')
+    theta_m = params[((2*U*K + 2*U + 2*U*A) + M*K + M):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A)].reshape((M,A), order='F')
 
-    r_hat =  np.dot(np.dot(v_u, M_sum), v_m.T) + b_o*np.ones((U,M)) + np.matlib.repmat(b_u,1,M) + np.matlib.repmat(b_m.T,U,1)
+    num_theta_uma = np.exp(np.tile(theta_ut.reshape(U,1,A), (1,M,1)) + np.tile(theta_m.reshape(1,M,A), (U,1,1)))
+    theta_uma = num_theta_uma / (num_theta_uma.sum())
+    M_a = params[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
+
+    M_a_norm = np.dot(num_theta_uma, M_a)
+
+    M_sum = np.diag(M_a_norm.sum(0))
+
+    r_hat =  np.dot(np.dot(v_ut, M_sum), v_m.T) + b_o*np.ones((U,M)) + np.matlib.repmat(b_ut,1,M) + np.matlib.repmat(b_m.T,U,1)
 
     loss1 = epsilon*np.square(rating_matrix - r_hat)
-    loss2 = np.multiply(Nums[:,:,0], np.log(1 + np.exp(-1*(c*r_hat - b)))) + np.multiply(Nums[:,:,1], np.log(1 + np.exp((c*r_hat - b))))
+    loss2 = np.multiply(Nums[:,:,0], np.log(1/(1 + np.exp(-1*(c*r_hat - b))))) + np.multiply(Nums[:,:,1], np.log(1/(1 + np.exp((c*r_hat - b)))))
     
     loss3 = np.zeros((U,M))
     for i in range(A):
         #print np.diag(M_a[i])
-        ruma = np.dot(np.dot(v_u, np.diag(M_a[i])), v_m.T) + b_o*np.ones((U,M)) + np.matlib.repmat(b_u,1,M) + np.matlib.repmat(b_m.T,U,1)
-        loss3 = loss3 + np.multiply(Numas[:,:,i,0], np.log(1 + np.exp(-1*(c*ruma - b)))) + np.multiply(Numas[:,:,i,1], np.log(1 + np.exp((c*ruma - b))))
+        ruma = np.dot(np.dot(v_ut, np.diag(M_a[i])), v_m.T) + b_o*np.ones((U,M)) + np.matlib.repmat(b_ut,1,M) + np.matlib.repmat(b_m.T,U,1)
+        loss3 = loss3 + np.multiply(Numas[:,:,i,0], np.log(1/(1 + np.exp(-1*(c*ruma - b))))) + np.multiply(Numas[:,:,i,1], np.log(1/(1 + np.exp((c*ruma - b)))))
 
-    theta_uma = np.exp(np.tile(theta_u.reshape(U,1,A), (1,M,1)) + np.tile(theta_u.reshape(1,M,A), (U,1,1)))
-    loss4 = theta_uma / (theta_uma.sum())
-    loss4 = (np.multiply(Numa, np.log(loss4))).sum(2)
 
-    loss = loss1 + loss2 + loss3 - loss4
+# 0 -> positive,  1-> negative
+
+    loss4 = (np.multiply(Numa, np.log(theta_uma))).sum(2)
+
+    loss = loss1 - loss2 - loss3 - loss4
     loss = np.multiply(loss, (rating_matrix > 0))
     total_loss = loss.sum()
 
     return total_loss
+
+
+# def fprime(params, *args):
+
+
+#     y = args[0]
+#     z = args[1]
+#     s = args[2]
+#     Nums = args[3]
+#     Numas = args[4]
+#     Numa = args[5]
+
+#     grad_vut = np.dot(np.dot(theta_ut, M_a), v_m.T)
+#     grad_vu = grad_vut
+#     grad_alpha_vu = grad_vut*dev_t(t, t_mean)
+
+#     grad_bu = 1
+#     grad_alpha_bu = dev_t(t, t_mean)
+
+#     grad_thetaut = np.multiply( np.dot( np.multiply(v_ut.T, M_a), v_m), num_theta_uma) 
+#     grad_thetau = grad_thetaut
+#     grad_alpha_thetau = grad_thetaut*dev_t(t, t_mean)
+
+#     grad_v_m = np.dot(vu, np.dot(theta_ut, M_a))
+#     grad_b_m = np.ones((U,1))
+#     grad_theta_m = np.multiply( np.dot( np.multiply(v_ut.T, M_a), v_m), num_theta_uma)
+#     grad_M_a = np.dot(num_theta_uma, np.dot(v_ut, v_m.T).reshape((1, K, K)))
+
+#     #check how nums defined
+    
+#     gradB_factor =  np.multiply(Nums[:,:,0], 1/(1 + np.exp((c*r_hat - b)))*1*c) + np.multiply(Nums[:,:,1], 1/(1 + np.exp(-1*(c*r_hat - b)))*(-1)*c)
+
+#     # complete all gradients.
+
+#     gradB_vut = np.dot(np.dot(theta_ut, M_a), v_m.T)
+#     gradB_vu = grad_vut
+#     gradB_alpha_vu = grad_vut*dev_t(t, t_mean)
+
+#     gradB_bu = 1
+#     gradB_alpha_bu = dev_t(t, t_mean)
+
+#     gradB_thetaut = np.multiply( np.dot( np.multiply(v_ut.T, M_a), v_m), num_theta_uma) 
+#     gradB_thetau = grad_thetaut
+#     gradB_alpha_thetau = grad_thetaut*dev_t(t, t_mean)
+
+#     gradB_v_m = np.dot(vu, np.dot(theta_ut, M_a))
+#     gradB_b_m = np.ones((U,1))
+#     gradB_theta_m = np.multiply( np.dot( np.multiply(v_ut.T, M_a), v_m), num_theta_uma)
+#     gradB_M_a = np.dot(num_theta_uma, np.dot(v_ut, v_m.T).reshape((1, K, K)))
+    
+#     gradC_factor = 0
+
+#     for i in range(A):
+#         gradC_factor += np.multiply(Numas[:,:,i,0], 1/(1 + np.exp((c*ruma - b))))*1*c + np.multiply(Numas[:,:,i,1], 1/(1 + np.exp(-1*(c*ruma - b))))*(-1)*c
+    
+#     gradD_thetau = np.multiply(np.multiply(np.divide(Numa, theta_uma), theta_uma), np.ones(A) - theta_uma)
+#     gradD_thetam = gradD_thetau
+
+
+
+
+
 
 '''def fprime(params, *args):
     y = args[0]
@@ -122,7 +202,7 @@ def optimizer():
     #print func(initial_values, *args)
 
     args = (y,z,s,Nums,Numas,Numa)
-    initial_values = numpy.concatenate((v_u.flatten('F'), b_u.flatten('F'), theta_u.flatten('F'), v_m.flatten('F'), b_m.flatten('F'), theta_m.flatten('F'), M_a.flatten('F')))    
+    initial_values = numpy.concatenate((alpha_vu.flatten('F'), v_u.flatten('F'), alpha_bu.flatten('F'), b_u.flatten('F'), alpha_tu.flatten('F'), theta_u.flatten('F'), v_m.flatten('F'), b_m.flatten('F'), theta_m.flatten('F'), M_a.flatten('F'), t_mean.flatten('F')))    
 
     x,f,d = fmin_l_bfgs_b(func, x0=initial_values, args=args, approx_grad=True, maxfun=1, maxiter=1)
     counter = 0

@@ -94,11 +94,11 @@ class GibbsSampler:
         self.S = S
         self.M = M
 
-    def _initialize(self, matrix):
+    def _initialize(self, review_matrix, review_map):
         """
         Initialize all variables needed in the run step
         """
-        (self.n_reviews, self.vocab_size) = matrix.shape
+        (self.n_reviews, self.vocab_size) = review_matrix.shape
 
         # Number of times y occurs
         self.cy = np.zeros(self.Y)
@@ -117,10 +117,18 @@ class GibbsSampler:
         self.cymw = np.zeros((self.Y, self.M, self.vocab_size))
         # Number of times y occurs with m
         self.cym = np.zeros((self.Y, self.M))
+
+        self.Nums = np.zeros((self.U,self.M,2))
+        self.Numas = np.zeros((self.U,self.M,self.A,2))
+        self.Numa = np.zeros((self.U,self.M,self.A))
+
         self.topics = {}
 
+
+
+
         for r in xrange(self.n_reviews):
-            for i, w in enumerate(word_indices(matrix[r, :])):
+            for i, w in enumerate(word_indices(review_matrix[r, :])):
                 # Choose a random assignment of y, z, w
                 (y, z, s) = (np.random.randint(self.Y), np.random.randint(self.Z), np.random.randint(self.S))
                 # Assign new values
@@ -136,6 +144,20 @@ class GibbsSampler:
                 m = np.random.randint(self.M)
                 self.cymw[y,m,w] += 1
                 self.cym[y,m] += 1
+
+                # Get Movie and User
+
+                m = movie_dict[review_map[r]['movie']]
+                u = user_dict[review_map[r]['user']]
+
+                 # TODO update nums
+
+                 self.Nums[u,m,s] +=1
+                 self.Numas[u,m,z,s] +=1
+                 self.Numa[u,m,z] +=1
+
+
+
                 self.topics[(r, i)] = (y, z, s)
 
     def _conditional_distribution(self, u, m, w):
@@ -229,3 +251,4 @@ class GibbsSampler:
                     self.cymw[y,m,w] += 1
                     self.cym[y,m] += 1
                     self.topics[(r, i)] = (y, z, s)
+
