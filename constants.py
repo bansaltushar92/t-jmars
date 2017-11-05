@@ -66,9 +66,9 @@ b_o = np.random.normal(0,sigma_b0)
 M_a = np.random.normal(0,sigma_Ma,(A, K))
 
 #Matrices N
-Nums = np.zeros((U,M,2))
-Numas = np.zeros((U,M,A,2))
-Numa = np.zeros((U,M,A))
+#Nums = np.zeros((U,M,2))
+#Numas = np.zeros((U,M,A,2))
+#Numa = np.zeros((U,M,A))
 
 #epsilon
 epsilon = 5
@@ -78,5 +78,3 @@ counter = 1
 
 #rating matrix
 rating_matrix = np.zeros((U,M))
-
-

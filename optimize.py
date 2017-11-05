@@ -1,4 +1,4 @@
-#from constants import *
+from constants import *
 from sampler import GibbsSampler
 import numpy as np
 import scipy as sp
@@ -18,14 +18,14 @@ def func(params, *args):
     Computes the value of the objective function required for gradient descent
     """
     global counter
-    print "Learning Paramater " + str(counter) + "..."
+    
     counter += 1
-    y = args[0]
-    z = args[1]
-    s = args[2]
-    Nums = args[3]
-    Numas = args[4]
-    Numa = args[5]
+    #y = args[0]
+    #z = args[1]
+    #s = args[2]
+    Nums = args[0]
+    Numas = args[1]
+    Numa = args[2]
 
 
     t_mean = params[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K):].reshape((U,1), order='F')
@@ -68,7 +68,7 @@ def func(params, *args):
     loss = loss1 - loss2 - loss3 - loss4
     loss = np.multiply(loss, (rating_matrix > 0))
     total_loss = loss.sum()
-
+    print("Learning Paramater " + str(counter) + "... Loss: " + str(total_loss))
     return total_loss
 
 
@@ -191,7 +191,7 @@ def func(params, *args):
     grad_vu = -2*epsilon*np.dot(np.multiply((rating_matrix - r_hat), (rating_matrix > 0)), np.dot(theta_uma, M_a))'''
 
 
-def optimizer():
+def optimizer(Nums,Numas,Numa):
     """
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
@@ -201,7 +201,9 @@ def optimizer():
     #initial_values = np.array([v_u, b_u, theta_u, v_m, b_m, theta_m, M_a], dtype=object)
     #print func(initial_values, *args)
 
-    args = (y,z,s,Nums,Numas,Numa)
+
+    args = (Nums,Numas,Numa)
+
     initial_values = numpy.concatenate((alpha_vu.flatten('F'), v_u.flatten('F'), alpha_bu.flatten('F'), b_u.flatten('F'), alpha_tu.flatten('F'), theta_u.flatten('F'), v_m.flatten('F'), b_m.flatten('F'), theta_m.flatten('F'), M_a.flatten('F'), t_mean.flatten('F')))    
 
     x,f,d = fmin_l_bfgs_b(func, x0=initial_values, args=args, approx_grad=True, maxfun=1, maxiter=1)
@@ -212,12 +214,3 @@ def optimizer():
     #print d
 
     return x,f,d
-
-
-
-
-
-
-
-
-
