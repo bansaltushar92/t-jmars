@@ -50,7 +50,7 @@ def func(params, *args):
     # r_hat =  np.dot(np.dot(v_ut, M_sum), v_m.T) + b_o*np.ones((U,M)) + np.matlib.repmat(b_ut,1,M) + np.matlib.repmat(b_m.T,U,1)
 
 
-    # num_theta_uma = np.zeros(rating_list.shape) # How to define
+    num_theta_uma = np.zeros(rating_list.shape) # How to define
     
     # Make something in indexer which stores only user-movie pairs for given data.
 

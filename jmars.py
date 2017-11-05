@@ -22,12 +22,12 @@ def main():
 
     # Read 
     imdb = Indexer()
-    imdb_file = 'data/data1.json'
+    imdb_file = 'data/clothing_data.json'
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     logging.info('Reading file %s' % imdb_file)
     imdb.read_file(imdb_file)
     logging.info('File %s read' % imdb_file)
-    (vocab_size, user_list, movie_list, rating_matrix, review_matrix, review_map, user_dict, movie_dict) = imdb.get_mappings()
+    (vocab_size, user_list, movie_list, rating_matrix, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean) = imdb.get_mappings()
 
     # Get number of users and movies
     Users = len(user_list)

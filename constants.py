@@ -25,10 +25,12 @@ sigma_ua = 0.1
 sigma_ma = 1.0
 
 # Number of users and movies
-U = 1910 #4079
-M = 1276 #4670
+U = 4000 #4079
+M = 15464 #4670
+#R = 33961
 I = 100
 
+rating_list = []
 # Hidden variables
 
 # Switching variable y
