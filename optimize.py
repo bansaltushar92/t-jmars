@@ -9,8 +9,8 @@ import numpy.matlib
 
 # define t_mean, beta?
 
-def dev_t(t, t_mean):
-    return np.sign(t-t_mean[u])*abs(t-t_mean[u])^beta
+def dev_t(t, tu_mean):
+    return np.sign(t-tu_mean)*abs(t-tu_mean)^beta
 
 
 def func(params, *args):
@@ -27,29 +27,52 @@ def func(params, *args):
     Numas = args[1]
     Numa = args[2]
 
-
-    t_mean = params[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K):].reshape((U,1), order='F')
-
     alpha_vu = params[:(U*K)].reshape((U,K), order='F')
-    v_ut = params[(U*K):2*(U*K)].reshape((U,K), order='F') + dev_t(t, t_mean)*alpha_vu
+    v_ut = params[(U*K):2*(U*K)].reshape((U,K), order='F') #+ dev_t(t)*alpha_vu
     alpha_bu = params[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')                # change indices all after this.
-    b_ut = params[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F') + dev_t(t, t_mean)*alpha_bu
+    b_ut = params[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F') #+ dev_t(t)*alpha_bu
     alpha_tu = params[2*(U*K) + 2*U:(2*(U*K) + 2*U + U*A)].reshape((U,A), order='F')
-    theta_ut = params[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F') + dev_t(t, t_mean)*alpha_tu
+    theta_ut = params[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F') #+ dev_t(t)*alpha_tu
 
     v_m = params[((2*U*K + 2*U + 2*U*A)):((2*U*K + 2*U + 2*U*A) + M*K)].reshape((M,K), order='F')
     b_m = params[((2*U*K + 2*U + 2*U*A)+ M*K):((2*U*K + 2*U + 2*U*A) + M*K + M)].reshape((M,1), order='F')
     theta_m = params[((2*U*K + 2*U + 2*U*A) + M*K + M):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A)].reshape((M,A), order='F')
 
-    num_theta_uma = np.exp(np.tile(theta_ut.reshape(U,1,A), (1,M,1)) + np.tile(theta_m.reshape(1,M,A), (U,1,1)))
-    theta_uma = num_theta_uma / (num_theta_uma.sum())
-    M_a = params[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
+    # num_theta_uma = np.exp(np.tile(theta_ut.reshape(U,1,A), (1,M,1)) + np.tile(theta_m.reshape(1,M,A), (U,1,1)))
+    # theta_uma = num_theta_uma / (num_theta_uma.sum())
+    # M_a = params[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
 
-    M_a_norm = np.dot(num_theta_uma, M_a)
+    # M_a_norm = np.dot(num_theta_uma, M_a)
 
-    M_sum = np.diag(M_a_norm.sum(0))
+    # M_sum = np.diag(M_a_norm.sum(0))
 
-    r_hat =  np.dot(np.dot(v_ut, M_sum), v_m.T) + b_o*np.ones((U,M)) + np.matlib.repmat(b_ut,1,M) + np.matlib.repmat(b_m.T,U,1)
+    # print (v_ut.shape, M_a_norm.shape, M_sum.shape, v_m.shape, b_ut.shape, b_m.shape)
+    # r_hat =  np.dot(np.dot(v_ut, M_sum), v_m.T) + b_o*np.ones((U,M)) + np.matlib.repmat(b_ut,1,M) + np.matlib.repmat(b_m.T,U,1)
+
+
+    # num_theta_uma = np.zeros(rating_list.shape) # How to define
+    
+    # Make something in indexer which stores only user-movie pairs for given data.
+
+    for i in range(len(rating_list)): #Get ratinglist
+        m = rating_list[i]['m']
+        u = rating_list[i]['u']
+        t = rating_list[i]['t']
+        num_theta_uma[i] = np.exp(theta_u[u] + dev_t(t, t_mean[u])*alpha_tu[u] + theta_m[m])
+        theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
+
+    M_sum = np.dot(num_theta_uma, M_a)
+     
+    for i in range(len(rating_list)):
+        m = rating_list[i]['m']
+        u = rating_list[i]['u']
+        t = rating_list[i]['t'] 
+        v_ut = v_u[u] + dev_t(t, t_mean[u])*alpha_vu[u]
+        b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
+        r_hat =  np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m.T) + b_o + b_ut + b_m
+
+    # r_hat[u][m] =  np.dot(np.dot(v_u[u] + dev_t(t)*alpha_vu[u], M_sum), v_m[m].T) + b_o + (b_u[u] + dev_t(t)*alpha_bu[u]) + b_m[m]
+
 
     loss1 = epsilon*np.square(rating_matrix - r_hat)
     loss2 = np.multiply(Nums[:,:,0], np.log(1/(1 + np.exp(-1*(c*r_hat - b))))) + np.multiply(Nums[:,:,1], np.log(1/(1 + np.exp((c*r_hat - b)))))
@@ -204,7 +227,7 @@ def optimizer(Nums,Numas,Numa):
 
     args = (Nums,Numas,Numa)
 
-    initial_values = numpy.concatenate((alpha_vu.flatten('F'), v_u.flatten('F'), alpha_bu.flatten('F'), b_u.flatten('F'), alpha_tu.flatten('F'), theta_u.flatten('F'), v_m.flatten('F'), b_m.flatten('F'), theta_m.flatten('F'), M_a.flatten('F'), t_mean.flatten('F')))    
+    initial_values = numpy.concatenate((alpha_vu.flatten('F'), v_u.flatten('F'), alpha_bu.flatten('F'), b_u.flatten('F'), alpha_tu.flatten('F'), theta_u.flatten('F'), v_m.flatten('F'), b_m.flatten('F'), theta_m.flatten('F'), M_a.flatten('F')))    
 
     x,f,d = fmin_l_bfgs_b(func, x0=initial_values, args=args, approx_grad=True, maxfun=1, maxiter=1)
     counter = 0

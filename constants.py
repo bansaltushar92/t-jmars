@@ -48,6 +48,9 @@ alpha_vu = np.random.normal(0,sigma_u,(U, K))
 alpha_bu = np.random.normal(0,sigma_u,(U, 1))
 alpha_tu = np.random.normal(0,sigma_u,(U, A))
 
+#t_mean
+t_mean = np.zeros(U)
+
 
 # User
 v_u = np.random.normal(0,sigma_u,(U, K))      # Latent factor vector
