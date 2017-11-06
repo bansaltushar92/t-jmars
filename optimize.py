@@ -10,7 +10,7 @@ import numpy.matlib
 # define t_mean, beta?
 
 def dev_t(t, tu_mean):
-    return np.sign(t-tu_mean)*abs(t-tu_mean)^beta
+    return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
 
 
 def func(params, *args):
@@ -26,13 +26,16 @@ def func(params, *args):
     Nums = args[0]
     Numas = args[1]
     Numa = args[2]
-
+    rating_list = args[3]
+    t_mean = args[4]
+    
+    #v_ut = np.zeros((R,K))
     alpha_vu = params[:(U*K)].reshape((U,K), order='F')
-    v_ut = params[(U*K):2*(U*K)].reshape((U,K), order='F') #+ dev_t(t)*alpha_vu
+    v_u = params[(U*K):2*(U*K)].reshape((U,K), order='F') #+ dev_t(t)*alpha_vu
     alpha_bu = params[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')                # change indices all after this.
-    b_ut = params[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F') #+ dev_t(t)*alpha_bu
+    b_u = params[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F') #+ dev_t(t)*alpha_bu
     alpha_tu = params[2*(U*K) + 2*U:(2*(U*K) + 2*U + U*A)].reshape((U,A), order='F')
-    theta_ut = params[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F') #+ dev_t(t)*alpha_tu
+    theta_u = params[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F') #+ dev_t(t)*alpha_tu
 
     v_m = params[((2*U*K + 2*U + 2*U*A)):((2*U*K + 2*U + 2*U*A) + M*K)].reshape((M,K), order='F')
     b_m = params[((2*U*K + 2*U + 2*U*A)+ M*K):((2*U*K + 2*U + 2*U*A) + M*K + M)].reshape((M,1), order='F')
@@ -50,7 +53,7 @@ def func(params, *args):
     # r_hat =  np.dot(np.dot(v_ut, M_sum), v_m.T) + b_o*np.ones((U,M)) + np.matlib.repmat(b_ut,1,M) + np.matlib.repmat(b_m.T,U,1)
 
 
-    num_theta_uma = np.zeros(rating_list.shape) # How to define
+    num_theta_uma = np.zeros((len(rating_list), A)) # How to define
     
     # Make something in indexer which stores only user-movie pairs for given data.
 
@@ -58,39 +61,45 @@ def func(params, *args):
         m = rating_list[i]['m']
         u = rating_list[i]['u']
         t = rating_list[i]['t']
+        #print(np.exp(theta_u[u] + dev_t(t, t_mean[u])*alpha_tu[u] + theta_m[m]))
         num_theta_uma[i] = np.exp(theta_u[u] + dev_t(t, t_mean[u])*alpha_tu[u] + theta_m[m])
-        theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
+        
+    
+    theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
 
     M_sum = np.dot(num_theta_uma, M_a)
-     
+    
+    loss1 = 0
+    loss3 = 0
+    #print("2")
     for i in range(len(rating_list)):
         m = rating_list[i]['m']
         u = rating_list[i]['u']
         t = rating_list[i]['t'] 
         v_ut = v_u[u] + dev_t(t, t_mean[u])*alpha_vu[u]
         b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
-        r_hat =  np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m.T) + b_o + b_ut + b_m
+        r_hat[i] =  np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m[m].T) + b_o + b_ut + b_m[m]
+        loss1 += epsilon*(rating_matrix[u,m] - r_hat[i])
+        
+        for j in range(A):
+            ruma = np.dot(np.dot(v_ut, np.diag(M_a[j])), v_m[m].T) + b_o + b_ut + b_m[m]
+            loss3 += np.multiply(Numas[i,j,0], np.log(1/(1 + np.exp(-1*(c*ruma - b))))) + np.multiply(Numas[i,j,1], np.log(1/(1 + np.exp((c*ruma - b)))))
 
     # r_hat[u][m] =  np.dot(np.dot(v_u[u] + dev_t(t)*alpha_vu[u], M_sum), v_m[m].T) + b_o + (b_u[u] + dev_t(t)*alpha_bu[u]) + b_m[m]
 
-
-    loss1 = epsilon*np.square(rating_matrix - r_hat)
-    loss2 = np.multiply(Nums[:,:,0], np.log(1/(1 + np.exp(-1*(c*r_hat - b))))) + np.multiply(Nums[:,:,1], np.log(1/(1 + np.exp((c*r_hat - b)))))
     
-    loss3 = np.zeros((U,M))
-    for i in range(A):
-        #print np.diag(M_a[i])
-        ruma = np.dot(np.dot(v_ut, np.diag(M_a[i])), v_m.T) + b_o*np.ones((U,M)) + np.matlib.repmat(b_ut,1,M) + np.matlib.repmat(b_m.T,U,1)
-        loss3 = loss3 + np.multiply(Numas[:,:,i,0], np.log(1/(1 + np.exp(-1*(c*ruma - b))))) + np.multiply(Numas[:,:,i,1], np.log(1/(1 + np.exp((c*ruma - b)))))
+    loss2 = np.multiply(Nums[:,0], np.log(1/(1 + np.exp(-1*(c*r_hat - b))))) + np.multiply(Nums[:,1], np.log(1/(1 + np.exp((c*r_hat - b)))))
+    
+    #loss3 = np.zeros((U,M))
+    
 
 
 # 0 -> positive,  1-> negative
+    loss4 = (np.multiply(Numa, np.log(theta_uma))).sum()
 
-    loss4 = (np.multiply(Numa, np.log(theta_uma))).sum(2)
-
-    loss = loss1 - loss2 - loss3 - loss4
-    loss = np.multiply(loss, (rating_matrix > 0))
-    total_loss = loss.sum()
+    total_loss = loss1.sum() - loss2.sum() - loss3.sum() - loss4.sum()
+    #loss = np.multiply(loss, (rating_matrix > 0))
+    
     print("Learning Paramater " + str(counter) + "... Loss: " + str(total_loss))
     return total_loss
 
@@ -213,8 +222,11 @@ def func(params, *args):
 
     grad_vu = -2*epsilon*np.dot(np.multiply((rating_matrix - r_hat), (rating_matrix > 0)), np.dot(theta_uma, M_a))'''
 
+def fprime(params, *args):
+    return np.ones((len(params)))
 
-def optimizer(Nums,Numas,Numa):
+
+def optimizer(Nums,Numas,Numa,rating_list,t_mean):
     """
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
@@ -225,11 +237,12 @@ def optimizer(Nums,Numas,Numa):
     #print func(initial_values, *args)
 
 
-    args = (Nums,Numas,Numa)
+    args = (Nums,Numas,Numa,rating_list,t_mean)
+    #print(len(rating_list))
 
     initial_values = numpy.concatenate((alpha_vu.flatten('F'), v_u.flatten('F'), alpha_bu.flatten('F'), b_u.flatten('F'), alpha_tu.flatten('F'), theta_u.flatten('F'), v_m.flatten('F'), b_m.flatten('F'), theta_m.flatten('F'), M_a.flatten('F')))    
 
-    x,f,d = fmin_l_bfgs_b(func, x0=initial_values, args=args, approx_grad=True, maxfun=1, maxiter=1)
+    x,f,d = fmin_l_bfgs_b(func, x0=initial_values, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=1)
     counter = 0
 
     #print x

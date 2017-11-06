@@ -95,6 +95,7 @@ class GibbsSampler:
         self.S = S
         self.M = M
         self.U = U
+        self.R = R
         self.A = A
 
     def _initialize(self, review_matrix, review_map, movie_dict, user_dict):
@@ -122,9 +123,9 @@ class GibbsSampler:
         # Number of times y occurs with m
         self.cym = np.zeros((self.Y, self.M))
 
-        self.Nums = np.zeros((self.U,self.M,2))
-        self.Numas = np.zeros((self.U,self.M,self.A,2))
-        self.Numa = np.zeros((self.U,self.M,self.A))
+        self.Nums = np.zeros((self.R,2))
+        self.Numas = np.zeros((self.R,self.A,2))
+        self.Numa = np.zeros((self.R,self.A))
 
         self.topics = {}
 
@@ -151,14 +152,14 @@ class GibbsSampler:
 
                 # Get Movie and User
 
-                m = movie_dict[review_map[r]['movie']]
-                u = user_dict[review_map[r]['user']]
+                #m = movie_dict[review_map[r]['movie']]
+                #u = user_dict[review_map[r]['user']]
 
                  # TODO update nums
 
-                self.Nums[u,m,s] +=1
-                self.Numas[u,m,z,s] +=1
-                self.Numa[u,m,z] +=1
+                self.Nums[r,s] +=1
+                self.Numas[r,z,s] +=1
+                self.Numa[r,z] +=1
 
                 self.topics[(r, i)] = (y, z, s)
 
@@ -236,9 +237,9 @@ class GibbsSampler:
                     # Get next distribution
                     # TODO: Define u
                     u = user_dict[review_map[r]['user']] #np.random.randint(1000)   # Why random ?? ?????? Take specific
-                    self.Nums[u,m,s] -=1
-                    self.Numas[u,m,z,s] -=1
-                    self.Numa[u,m,z] -=1
+                    self.Nums[r,s] -=1
+                    self.Numas[r,z,s] -=1
+                    self.Numa[r,z] -=1
                     
                     p_z = self._conditional_distribution(u, m, w) # Eq. 13 for all values of y,z,s -> computing tensor
                     (y, z, s) = sample_multiple_indices(p_z)
@@ -257,9 +258,9 @@ class GibbsSampler:
                     self.cymw[y,m,w] += 1
                     self.cym[y,m] += 1
                     
-                    self.Nums[u,m,s] +=1
-                    self.Numas[u,m,z,s] +=1
-                    self.Numa[u,m,z] +=1
+                    self.Nums[r,s] +=1
+                    self.Numas[r,z,s] +=1
+                    self.Numa[r,z] +=1
                     
                     self.topics[(r, i)] = (y, z, s)
   

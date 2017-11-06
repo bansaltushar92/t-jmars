@@ -10,8 +10,8 @@ import numpy.matlib
 from indexer import Indexer
 
 # Constants
-MAX_ITER = 500
-MAX_OPT_ITER = 10
+MAX_ITER = 2
+MAX_OPT_ITER = 1
 
 def main():
     """
@@ -28,6 +28,7 @@ def main():
     imdb.read_file(imdb_file)
     logging.info('File %s read' % imdb_file)
     (vocab_size, user_list, movie_list, rating_matrix, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean) = imdb.get_mappings()
+    
 
     # Get number of users and movies
     Users = len(user_list)
@@ -41,18 +42,12 @@ def main():
         logging.info('Running E-Step - Gibbs Sampling')
         # gibbs_sampler = GibbsSampler(5,A,2)
         # Nums,Numas,Numa = gibbs_sampler.run(rating_matrix, review_map, user_dict, movie_dict)
-        Nums = np.zeros((U,M,2))
-        Numas = np.zeros((U,M,A,2))
-        Numa = np.zeros((U,M,A))
+        Nums = np.zeros((R,2))
+        Numas = np.zeros((R,A,2))
+        Numa = np.zeros((R,A))
         logging.info('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
-            optimizer(Nums,Numas,Numa)
-
-    # Output Predicted Ratings
-    for u in range(U):
-        for m in range(M):
-            pred_rate = predicted_rating(u, m)
-            print("Predicted Rating of user " + str(u) + " and movie " + str(m) + ": " + str(pred_rate))
+            optimizer(Nums,Numas,Numa,rating_list,t_mean)
 
 if __name__ == "__main__":
     main()

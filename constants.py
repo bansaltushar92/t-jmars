@@ -27,22 +27,22 @@ sigma_ma = 1.0
 # Number of users and movies
 U = 4000 #4079
 M = 15464 #4670
-#R = 33961
+R = 33961
 I = 100
 
-rating_list = []
+beta=0.0001
 # Hidden variables
 
 # Switching variable y
-y = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
+#y = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
 #y = np.zeros((U, M, I))
 
 # Topic variable z
-z = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
+#z = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
 #z = np.zeros((U, M, I))
 
 # Sentiment variable s
-s = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
+#s = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
 #s = np.zeros((U, M, I))
 
 #dev_t
@@ -51,7 +51,7 @@ alpha_bu = np.random.normal(0,sigma_u,(U, 1))
 alpha_tu = np.random.normal(0,sigma_u,(U, A))
 
 #t_mean
-t_mean = np.zeros(U)
+#t_mean = np.zeros(U)
 
 
 # User
@@ -83,3 +83,4 @@ counter = 1
 
 #rating matrix
 rating_matrix = np.zeros((U,M))
+r_hat = np.zeros(R)
