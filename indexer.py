@@ -93,7 +93,7 @@ class Indexer:
 #                except:
 #                    continue
             #arr = clean_review(temp)
-            rating_list.append({'u': user_dict[review['reviewerID']], 'm': movie_dict[review['asin']], 't': review['unixReviewTime']})
+            rating_list.append({'u': user_dict[review['reviewerID']], 'm': movie_dict[review['asin']], 't': review['unixReviewTime'], 'r':review['overall']})
             temp = review['reviewText']
             arr = temp.split()
             review_matrix.append(arr)
