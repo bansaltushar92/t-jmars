@@ -154,7 +154,7 @@ def fprime(params, *args):
         gradC_vu = np.zeros(K)
         gradC_alpha_vu = np.zeros(K)
         gradC_bu = 0 
-        gradC_alpha_bu = np.zeros(K)
+        gradC_alpha_bu = 0
         gradC_vm = np.zeros(K)
         gradC_b_m = 0
         gradC_M_a = np.zeros(K)
@@ -215,6 +215,7 @@ def fprime(params, *args):
         final_grad_alpha_vu[u] += (rating_error - gradB_factor)*gradA_alpha_vu - gradC_alpha_vu
         
         final_grad_bu[u] += (rating_error - gradB_factor)*gradA_bu - gradC_bu
+        #print(rating_error.shape , gradB_factor.shape, gradA_alpha_bu.shape , gradC_alpha_bu.shape)
         final_grad_alpha_bu[u] += (rating_error - gradB_factor)*gradA_alpha_bu - gradC_alpha_bu
 
         final_grad_thetau[u] += (rating_error - gradB_factor)*gradA_thetau - gradD_thetau
@@ -225,6 +226,7 @@ def fprime(params, *args):
         final_grad_theta_m[m] += (rating_error - gradB_factor)*gradA_theta_m - gradD_thetam
         
         final_grad_M_a += (rating_error - gradB_factor)*gradA_M_a - gradC_M_a
+        
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
         return numpy.concatenate((final_grad_alpha_vu.flatten('F'), 
@@ -237,7 +239,7 @@ def fprime(params, *args):
             final_grad_b_m.flatten('F'), 
             final_grad_theta_m.flatten('F'), 
             final_grad_M_a.flatten('F'),
-            final_grad_bo))
+            np.array([final_grad_bo]).flatten('F')))
 
 
 # def fprime(params, *args):
@@ -251,8 +253,19 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean):
     global counter
 
     args = (Nums,Numas,Numa,rating_list,t_mean)
-    initial_values = numpy.concatenate((alpha_vu.flatten('F'), v_u.flatten('F'), alpha_bu.flatten('F'), b_u.flatten('F'), alpha_tu.flatten('F'), theta_u.flatten('F'), v_m.flatten('F'), b_m.flatten('F'), theta_m.flatten('F'), M_a.flatten('F'), b_o))    
-    x,f,d = fmin_l_bfgs_b(func, x0=initial_values, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=1)
+    initial_values = numpy.concatenate((alpha_vu.flatten('F'), 
+                                        v_u.flatten('F'), 
+                                        alpha_bu.flatten('F'), 
+                                        b_u.flatten('F'), 
+                                        alpha_tu.flatten('F'), 
+                                        theta_u.flatten('F'), 
+                                        v_m.flatten('F'), 
+                                        b_m.flatten('F'), 
+                                        theta_m.flatten('F'), 
+                                        M_a.flatten('F'), 
+                                        np.array([b_o]).flatten('F')))
+    
+    x,f,d = fmin_l_bfgs_b(func, x0=initial_values, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
     counter = 0
 
     return x,f,d
