@@ -8,7 +8,8 @@ import numpy.matlib
 
 
 def dev_t(t, tu_mean):
-    return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
+    # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
+    return 0.0
 
 
 def func(params, *args):
@@ -229,6 +230,9 @@ def fprime(params, *args):
         
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
+        #print(final_grad_M_a)
+        print ('Computing gradient')
+
         return numpy.concatenate((final_grad_alpha_vu.flatten('F'), 
             final_grad_vu.flatten('F'), 
             final_grad_alpha_bu.flatten('F'), 
@@ -251,7 +255,7 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean):
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
     global counter
-
+    counter = 0
     args = (Nums,Numas,Numa,rating_list,t_mean)
     initial_values = numpy.concatenate((alpha_vu.flatten('F'), 
                                         v_u.flatten('F'), 
@@ -266,6 +270,49 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean):
                                         np.array([b_o]).flatten('F')))
     
     x,f,d = fmin_l_bfgs_b(func, x0=initial_values, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
-    counter = 0
+
+    assignment(x)
 
     return x,f,d
+
+
+def assignment(x):
+
+    global alpha_vu
+    global v_u
+    
+    global alpha_bu
+    global b_u
+    
+    global alpha_tu
+    global theta_u
+
+    global v_m
+    global b_m
+    global theta_m
+
+    global M_a
+    global b_o
+
+
+    alpha_vu = x[:(U*K)].reshape((U,K), order='F')
+    v_u = x[(U*K):2*(U*K)].reshape((U,K), order='F')
+    
+    alpha_bu = x[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')
+    b_u = x[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F')
+    
+    alpha_tu = x[2*(U*K) + 2*U:(2*(U*K) + 2*U + U*A)].reshape((U,A), order='F')
+    theta_u = x[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F')
+
+    v_m = x[((2*U*K + 2*U + 2*U*A)):((2*U*K + 2*U + 2*U*A) + M*K)].reshape((M,K), order='F')
+    b_m = x[((2*U*K + 2*U + 2*U*A)+ M*K):((2*U*K + 2*U + 2*U*A) + M*K + M)].reshape((M,1), order='F')
+    theta_m = x[((2*U*K + 2*U + 2*U*A) + M*K + M):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A)].reshape((M,A), order='F')
+
+    M_a = x[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
+    b_o = x[-1]
+
+
+
+
+
+

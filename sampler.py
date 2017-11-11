@@ -25,6 +25,7 @@ def predicted_aspect_rating(u, m, a):
     """
     Computes the predicted rating for user u on movie m and aspect a
     """
+    
     temp = np.diag(M_a[a])
     r = v_u[u].dot(temp).dot(v_m[m].T) + b_o + b_u[u] + b_m[m]
     return r.sum()
@@ -213,6 +214,7 @@ class GibbsSampler:
         """
         self._initialize(rating_matrix, review_map, movie_dict, user_dict)
 
+        print (M_a)
         for it in range(max_iter):
             print("iter-> ", it)
             print('Gibbs Sampling Iteration: %d' % it)
@@ -265,4 +267,3 @@ class GibbsSampler:
                     self.topics[(r, i)] = (y, z, s)
   
             return (self.Nums, self.Numas, self.Numa)
-

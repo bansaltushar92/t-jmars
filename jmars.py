@@ -37,6 +37,7 @@ def main():
     logging.info('No. of movies M = %d' % Movies)
 
     # Run Gibbs EM
+    x = None
     for it in range(1,MAX_ITER+1):
         logging.info('Running iteration %d of Gibbs EM' % it)
         logging.info('Running E-Step - Gibbs Sampling')
@@ -47,7 +48,9 @@ def main():
         #Numa = np.zeros((R,A))
         logging.info('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
-            optimizer(Nums,Numas,Numa,rating_list,t_mean)
+            x, f, d = optimizer(Nums,Numas,Numa,rating_list,t_mean)
+            print ('Final loss after: ', MAX_OPT_ITER, ' is ', f)
+
 
 if __name__ == "__main__":
     main()
