@@ -43,9 +43,9 @@ def main():
         logging.info('Running E-Step - Gibbs Sampling')
         gibbs_sampler = GibbsSampler(5,A,2)
         Nums,Numas,Numa = gibbs_sampler.run(rating_matrix, review_map, user_dict, movie_dict)
-        #Nums = np.zeros((R,2))
-        #Numas = np.zeros((R,A,2))
-        #Numa = np.zeros((R,A))
+        # Nums = np.zeros((R,2))
+        # Numas = np.zeros((R,A,2))
+        # Numa = np.zeros((R,A))
         logging.info('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
             x, f, d = optimizer(Nums,Numas,Numa,rating_list,t_mean)

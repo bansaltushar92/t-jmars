@@ -143,8 +143,8 @@ def fprime(params, *args):
         gradA_vm = np.multiply(v_ut, np.dot(theta_uma[i], M_a))
         gradA_b_m = 1        
         gradA_theta_m = gradA_theta
-        
-        gradA_M_a = np.dot(theta_uma[i].T, np.multiply(v_ut, v_m[m]))
+
+        gradA_M_a = np.dot(np.matrix(theta_uma[i]).T, np.matrix(np.multiply(v_ut, v_m[m])))
         gradA_bo = 1 
 
         ########### For term B
@@ -158,7 +158,7 @@ def fprime(params, *args):
         gradC_alpha_bu = 0
         gradC_vm = np.zeros(K)
         gradC_b_m = 0
-        gradC_M_a = np.zeros(K)
+        gradC_M_a = np.zeros((A,K))
         gradC_bo = 0
 
         for j in range(A):
@@ -174,7 +174,7 @@ def fprime(params, *args):
             gradC_vm += gradC_factor*np.multiply(M_a[j], v_ut)
             gradC_b_m += gradC_factor        
             
-            gradC_M_a += gradC_factor*np.multiply(v_ut, v_m[m])
+            gradC_M_a[j] = gradC_factor*np.matrix(np.multiply(v_ut, v_m[m]))
             gradC_bo += gradC_factor
 
         ########### For term D
@@ -225,13 +225,12 @@ def fprime(params, *args):
         final_grad_vm[m] += (rating_error - gradB_factor)*gradA_vm - gradC_vm
         final_grad_b_m[m] += (rating_error - gradB_factor)*gradA_b_m - gradC_b_m      
         final_grad_theta_m[m] += (rating_error - gradB_factor)*gradA_theta_m - gradD_thetam
-        
-        final_grad_M_a += (rating_error - gradB_factor)*gradA_M_a - gradC_M_a
+
+        final_grad_M_a += np.multiply((rating_error - gradB_factor),gradA_M_a) - gradC_M_a
         
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
-        #print(final_grad_M_a)
-        print ('Computing gradient')
+        print 'final_grad_M_a', final_grad_M_a
 
         return numpy.concatenate((final_grad_alpha_vu.flatten('F'), 
             final_grad_vu.flatten('F'), 
