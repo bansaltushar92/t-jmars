@@ -1,5 +1,6 @@
 from constants import *
 import numpy as np
+from scipy.sparse import dok_matrix
 
 # Joint aspect distribution
 def joint_aspect(u, m):
@@ -79,9 +80,9 @@ def word_indices(vec):
     """
     Returns non-zero entries of vec one at a time
     """
-    for idx in vec.nonzero()[0]:
-        for i in range(int(vec[idx])):
-            yield idx
+#    for idx in vec.nonzero()[0]:
+#        for i in range(int(vec[idx])):
+#            yield idx
 
 class GibbsSampler:
     """
@@ -99,12 +100,13 @@ class GibbsSampler:
         self.R = R
         self.A = A
 
-    def _initialize(self, review_matrix, review_map, movie_dict, user_dict):
+    def _initialize(self, vocab_size, review_matrix, review_map, movie_dict, user_dict, movie_reviews, word_dictionary):
 
         """
         Initialize all variables needed in the run step
         """
-        (self.n_reviews, self.vocab_size) = review_matrix.shape
+        self.vocab_size = vocab_size
+        self.n_reviews = len(review_matrix)
 
         # Number of times y occurs
         self.cy = np.zeros(self.Y)
@@ -119,10 +121,12 @@ class GibbsSampler:
         self.cyzw = np.zeros((self.Y, self.Z, self.vocab_size))
         # Number of times y occurs with z
         self.cyz = np.zeros((self.Y, self.Z))
+
+        
         # Number of times y occurs with m and w
-        self.cymw = np.zeros((self.Y, self.M, self.vocab_size))
+#        self.cymw = dok_matrix((self.Y, self.M, self.vocab_size), dtype=np.float)
         # Number of times y occurs with m
-        self.cym = np.zeros((self.Y, self.M))
+#        self.cym = np.zeros((self.Y, self.M))
 
         self.Nums = np.zeros((self.R,2))
         self.Numas = np.zeros((self.R,self.A,2))
@@ -130,41 +134,41 @@ class GibbsSampler:
 
         self.topics = {}
 
+        for movie in range(self.M):
+            for (rev,r) in movie_reviews[movie]:
+                for i, word in enumerate(rev.strip().split()):
+                    w = word_dictionary[word]
+                    # Choose a random assignment of y, z, w
+                    (y, z, s) = (np.random.randint(self.Y), np.random.randint(self.Z), np.random.randint(self.S))
+                    # Assign new values
+                    self.cy[y] += 1
+                    self.c += 1
+                    self.cyw[y,w] += 1
+                    self.cy[y] += 1
+                    self.cysw[y,s,w] += 1
+                    self.cys[y,s] += 1
+                    self.cyzw[y,z,w] += 1
+                    self.cyz[y,z] += 1
+                    
+                    #m = np.random.randint(self.M)
+                    #self.cymw[y,m,w] += 1
+                    #self.cym[y,m] += 1
+    
+                    # Get Movie and User
+    
+                    #m = movie_dict[review_map[r]['movie']]
+                    #u = user_dict[review_map[r]['user']]
+    
+                     # TODO update nums
+    
+                    self.Nums[r,s] +=1
+                    self.Numas[r,z,s] +=1
+                    self.Numa[r,z] +=1
+    
+                    self.topics[(r, i)] = (y, z, s)
+            #print(list((review_matrix[self.n_reviews-1, :])))
 
-
-        for r in range(self.n_reviews):
-
-            for i, w in enumerate(word_indices(review_matrix[r, :])):
-                # Choose a random assignment of y, z, w
-                (y, z, s) = (np.random.randint(self.Y), np.random.randint(self.Z), np.random.randint(self.S))
-                # Assign new values
-                self.cy[y] += 1
-                self.c += 1
-                self.cyw[y,w] += 1
-                self.cy[y] += 1
-                self.cysw[y,s,w] += 1
-                self.cys[y,s] += 1
-                self.cyzw[y,z,w] += 1
-                self.cyz[y,z] += 1
-                # TODO: Define m
-                m = np.random.randint(self.M)
-                self.cymw[y,m,w] += 1
-                self.cym[y,m] += 1
-
-                # Get Movie and User
-
-                #m = movie_dict[review_map[r]['movie']]
-                #u = user_dict[review_map[r]['user']]
-
-                 # TODO update nums
-
-                self.Nums[r,s] +=1
-                self.Numas[r,z,s] +=1
-                self.Numa[r,z] +=1
-
-                self.topics[(r, i)] = (y, z, s)
-
-    def _conditional_distribution(self, u, m, w):
+    def _conditional_distribution(self, u, w, m, cymw, cym):
         """
         Returns the CPD for word w in the review by user u for movie m
         """
@@ -201,69 +205,85 @@ class GibbsSampler:
         for z in range(self.Z):
             for s in range(self.S):
                 p_z[4,z,s] = (self.cy[4] + gamma) / (self.c + 5 * gamma)
-                p_z[4,z,s] = (p_z[4,z,s] * (self.cymw[4,m,w] + eta)) / (self.cym[4,m] + eta)
+                p_z[4,z,s] = (p_z[4,z,s] * (cymw[4,w] + eta)) / (cym[4] + eta)
 
         # Normalize
         p_z = p_z / p_z.sum()
 
         return p_z
 
-    def run(self, rating_matrix, review_map, user_dict, movie_dict, max_iter=1):
+    def run(self, vocab_size, review_matrix, review_map, user_dict, movie_dict, movie_reviews, word_dictionary, max_iter=1):
         """
         Perform sampling max_iter times
         """
-        self._initialize(rating_matrix, review_map, movie_dict, user_dict)
+        self._initialize(vocab_size, review_matrix, review_map, movie_dict, user_dict, movie_reviews, word_dictionary)
 
         print (M_a)
         for it in range(max_iter):
             print("iter-> ", it)
             print('Gibbs Sampling Iteration: %d' % it)
-            for r in range(self.n_reviews):
-                for i, w in enumerate(word_indices(rating_matrix[r, :])): # iterate over word index for ratings non-zero
-                    (y, z, s) = self.topics[(r, i)]
-                    # Exclude current assignment
-                    self.cy[y] -= 1 # specific to y
-                    self.c -= 1     # sum over all y
-                    self.cyw[y,w] -= 1
-                    # self.cy[y] -= 1   # Note: Wrong should not be reduced again
-                    self.cysw[y,s,w] -= 1
-                    self.cys[y,s] -= 1
-                    self.cyzw[y,z,w] -= 1
-                    self.cyz[y,z] -= 1
-                    # TODO: Define m
-                    m = movie_dict[review_map[r]['movie']] #np.random.randint(self.M)   # Why random ?? ?????? Take specific
-                    #print "error", y, m, w
-                    self.cymw[y,m,w] -= 1
-                    self.cym[y,m] -= 1
-
-                    # Get next distribution
-                    # TODO: Define u
-                    u = user_dict[review_map[r]['user']] #np.random.randint(1000)   # Why random ?? ?????? Take specific
-                    self.Nums[r,s] -=1
-                    self.Numas[r,z,s] -=1
-                    self.Numa[r,z] -=1
-                    
-                    p_z = self._conditional_distribution(u, m, w) # Eq. 13 for all values of y,z,s -> computing tensor
-                    (y, z, s) = sample_multiple_indices(p_z)
-
-                    # Assign new values
-                    self.cy[y] += 1
-                    self.c += 1
-                    self.cyw[y,w] += 1
-                    self.cy[y] += 1
-                    self.cysw[y,s,w] += 1
-                    self.cys[y,s] += 1
-                    self.cyzw[y,z,w] += 1
-                    self.cyz[y,z] += 1
-                    # TODO: Define m
-                    m = np.random.randint(self.M)
-                    self.cymw[y,m,w] += 1
-                    self.cym[y,m] += 1
-                    
-                    self.Nums[r,s] +=1
-                    self.Numas[r,z,s] +=1
-                    self.Numa[r,z] +=1
-                    
-                    self.topics[(r, i)] = (y, z, s)
-  
+            for movie in range(self.M):
+                
+                if(movie%1000 == 0):
+                    print(movie)
+                
+                # Number of times y occurs with m and w
+                cymw = dok_matrix((self.Y, self.vocab_size), dtype=np.float)
+                # Number of times y occurs with m
+                cym = np.zeros(self.Y)
+                
+                for (rev,r) in movie_reviews[movie]:
+                    for w in rev.strip().split():       ## map w to it's index
+                        (y, z, s) = (np.random.randint(self.Y), np.random.randint(self.Z), np.random.randint(self.S))
+                        cymw[y,word_dictionary[w]] += 1
+                        cym[y] += 1
+                
+                
+                for (rev,r) in movie_reviews[movie]:
+                    for i, word in enumerate(rev.strip().split()):
+                        w = word_dictionary[word]
+                        (y, z, s) = self.topics[(r, i)]
+                        
+                        # Exclude current assignment
+                        self.cy[y] -= 1 # specific to y
+                        self.c -= 1     # sum over all y
+                        self.cyw[y,w] -= 1
+                        # self.cy[y] -= 1   # Note: Wrong should not be reduced again
+                        self.cysw[y,s,w] -= 1
+                        self.cys[y,s] -= 1
+                        self.cyzw[y,z,w] -= 1
+                        self.cyz[y,z] -= 1
+                        
+                        cymw[y,w] -= 1
+                        cym[y] -= 1
+    
+                        # Get next distribution
+                        
+                        u = user_dict[review_map[r]['user']] #np.random.randint(1000)   # Why random ?? ?????? Take specific
+                        self.Nums[r,s] -=1
+                        self.Numas[r,z,s] -=1
+                        self.Numa[r,z] -=1
+                        
+                        p_z = self._conditional_distribution(u, w, movie, cymw, cym) # Eq. 13 for all values of y,z,s -> computing tensor
+                        (y, z, s) = sample_multiple_indices(p_z)
+    
+                        # Assign new values
+                        self.cy[y] += 1
+                        self.c += 1
+                        self.cyw[y,w] += 1
+                        self.cy[y] += 1
+                        self.cysw[y,s,w] += 1
+                        self.cys[y,s] += 1
+                        self.cyzw[y,z,w] += 1
+                        self.cyz[y,z] += 1
+                        
+                        cymw[y,w] += 1
+                        cym[y] += 1
+                        
+                        self.Nums[r,s] +=1
+                        self.Numas[r,z,s] +=1
+                        self.Numa[r,z] +=1
+                        
+                        self.topics[(r, i)] = (y, z, s)
+            #print(self.Nums[1], self.Numas[1], self.Numa[1])
             return (self.Nums, self.Numas, self.Numa)
