@@ -18,7 +18,7 @@ def predicted_rating(u, m):
     """
     theta_um = joint_aspect(u, m)
     temp = np.diag((np.dot(M_a.T, theta_um)).reshape(K))
-    r = v_u[u].dot(temp).dot(v_m[m].T) + b_o + b_u[u] + b_m[m]
+    r = v_u[u].dot(temp).dot(v_m[m].T) + b_o + b_u[u] + b_m[m]   ### Change to same as optimizer
     return r.sum()
 
 def predicted_aspect_rating(u, m, a):
