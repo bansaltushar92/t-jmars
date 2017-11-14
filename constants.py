@@ -25,9 +25,9 @@ sigma_ua = 0.1
 sigma_ma = 1.0
 
 # Number of users and movies
-U = 4000 #4079
-M = 15464 #4670
-R = 33961
+U = 468 #4079
+M = 467 #4670
+R = 1875
 I = 100
 
 beta=0.0001

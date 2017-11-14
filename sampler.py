@@ -7,55 +7,55 @@ def dev_t(t, tu_mean):
     return 0.0
 
 # Joint aspect distribution
-def joint_aspect(u, m):
+def joint_aspect(u, m, t, t_mean_u):
     """
     Returns the joint aspect distribution
     """
     
-    num_theta_uma = np.exp(theta_u[u] + dev_t(t, t_mean[u])*alpha_tu[u] + theta_m[m])
-    theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
+    num_theta_uma = np.exp(theta_u[u] + dev_t(t, t_mean_u)*alpha_tu[u] + theta_m[m])
+    theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum()).T
 
     return theta_uma
 
-def predicted_rating(u, m):
+def predicted_rating(u, m, t, t_mean_u):
     """
     Computes the predicted rating for user u on movie m
     """
 
-    theta_uma = joint_aspect(u, m)
+    theta_uma = joint_aspect(u, m, t, t_mean_u)
     M_sum = np.dot(theta_uma, M_a)
 
-    v_ut = v_u[u] + dev_t(t, t_mean[u])*alpha_vu[u]
-    b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
+    v_ut = v_u[u] + dev_t(t, t_mean_u)*alpha_vu[u]
+    b_ut = b_u[u] + dev_t(t, t_mean_u)*alpha_bu[u]
 
-    r = np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m[m].T) + b_o + b_ut + b_m[m]  
+    r = np.dot(np.dot(v_ut, np.diag(M_sum)), v_m[m].T) + b_o + b_ut + b_m[m]  
     return r
 
-def predicted_aspect_rating(u, m, a):
+def predicted_aspect_rating(u, m, a, t, t_mean_u):
     """
     Computes the predicted rating for user u on movie m and aspect a
     """
-    v_ut = v_u[u] + dev_t(t, t_mean[u])*alpha_vu[u]
-    b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
+    v_ut = v_u[u] + dev_t(t, t_mean_u)*alpha_vu[u]
+    b_ut = b_u[u] + dev_t(t, t_mean_u)*alpha_bu[u]
     
     r = np.dot(np.dot(v_ut, np.diag(M_a[a])), v_m[m].T) + b_o + b_ut + b_m[m]
     return r
 
-def aspect_sentiment_probability(s, u, m, a):
+def aspect_sentiment_probability(s, u, m, a, t, t_mean_u):
     """
     Computes the probability for a sentiment s on aspect a 
     for user u on movie m
     """
-    ruma = predicted_aspect_rating(u,m,a)
+    ruma = predicted_aspect_rating(u,m,a,t, t_mean_u)
     prob_suma = 1.0 / (1.0 + np.exp(-s*(c*ruma - b)))
     return prob_suma
 
-def aggregate_sentiment_probability(s, u, m):
+def aggregate_sentiment_probability(s, u, m, t, t_mean_u):
     """
     Computes the probability for aggregate sentiment s 
     for user u and movie m
     """
-    rum = predicted_rating(u,m)
+    rum = predicted_rating(u,m,t, t_mean_u)
     prob_sum = 1.0 / (1.0 + np.exp(-s*(c*rum - b)))
     return prob_sum
 
@@ -110,7 +110,7 @@ class GibbsSampler:
         self.R = R
         self.A = A
 
-    def _initialize(self, vocab_size, review_matrix, review_map, movie_dict, user_dict, movie_reviews, word_dictionary):
+    def _initialize(self, vocab_size, review_matrix, rating_list, movie_dict, user_dict, movie_reviews, word_dictionary):
 
         """
         Initialize all variables needed in the run step
@@ -178,7 +178,7 @@ class GibbsSampler:
                     self.topics[(r, i)] = (y, z, s)
             #print(list((review_matrix[self.n_reviews-1, :])))
 
-    def _conditional_distribution(self, u, w, m, cymw, cym):
+    def _conditional_distribution(self, u, w, m, t, t_mean_u, cymw, cym):
         """
         Returns the CPD for word w in the review by user u for movie m
         """
@@ -194,22 +194,22 @@ class GibbsSampler:
             for s in range(self.S):
                 p_z[1,z,s] = (self.cy[1] + gamma) / (self.c + 5 * gamma)
                 p_z[1,z,s] = (p_z[1,z,s] * (self.cysw[1,s,w] + eta)) / (self.cys[1,s] + eta)
-                p_z[1,z,s] = p_z[1,z,s] * aggregate_sentiment_probability(s,u,m)
+                p_z[1,z,s] = p_z[1,z,s] * aggregate_sentiment_probability(s,u,m,t, t_mean_u)
 
         # y = 2
         for z in range(self.Z):
             for s in range(self.S):
                 p_z[2,z,s] = (self.cy[2] + gamma) / (self.c + 5 * gamma)
                 p_z[2,z,s] = (p_z[2,z,s] * (self.cyzw[2,z,w] + eta)) / (self.cyz[2,z] + eta)
-                p_z[2,z,s] = p_z[2,z,s] * (joint_aspect(u, m)[z])
-                p_z[2,z,s] = p_z[2,z,s] * aspect_sentiment_probability(s,u,m,z)
+                p_z[2,z,s] = p_z[2,z,s] * (joint_aspect(u, m,t, t_mean_u)[z])
+                p_z[2,z,s] = p_z[2,z,s] * aspect_sentiment_probability(s,u,m,z,t, t_mean_u)
 
         # y = 3
         for z in range(self.Z):
             for s in range(self.S):
                 p_z[3,z,s] = (self.cy[3] + gamma) / (self.c + 5 * gamma)
                 p_z[3,z,s] = (p_z[3,z,s] * (self.cyzw[3,z,w] + eta)) / (self.cyz[3,z] + eta)
-                p_z[3,z,s] = p_z[3,z,s] * (joint_aspect(u,m)[z])
+                p_z[3,z,s] = p_z[3,z,s] * (joint_aspect(u,m,t, t_mean_u)[z])
 
         # y = 4
         for z in range(self.Z):
@@ -222,11 +222,11 @@ class GibbsSampler:
 
         return p_z
 
-    def run(self, vocab_size, review_matrix, review_map, user_dict, movie_dict, movie_reviews, word_dictionary, max_iter=1):
+    def run(self, vocab_size, review_matrix, rating_list, user_dict, movie_dict, movie_reviews, word_dictionary,t_mean, max_iter=1):
         """
         Perform sampling max_iter times
         """
-        self._initialize(vocab_size, review_matrix, review_map, movie_dict, user_dict, movie_reviews, word_dictionary)
+        self._initialize(vocab_size, review_matrix, rating_list, movie_dict, user_dict, movie_reviews, word_dictionary)
 
         print (M_a)
         for it in range(max_iter):
@@ -269,12 +269,13 @@ class GibbsSampler:
     
                         # Get next distribution
                         
-                        u = user_dict[review_map[r]['user']] #np.random.randint(1000)   # Why random ?? ?????? Take specific
+                        u = rating_list[r]['u'] #np.random.randint(1000)
+                        t = rating_list[r]['t']
                         self.Nums[r,s] -=1
                         self.Numas[r,z,s] -=1
                         self.Numa[r,z] -=1
                         
-                        p_z = self._conditional_distribution(u, w, movie, cymw, cym) # Eq. 13 for all values of y,z,s -> computing tensor
+                        p_z = self._conditional_distribution(u, w, movie, t, t_mean[u], cymw, cym) # Eq. 13 for all values of y,z,s -> computing tensor
                         (y, z, s) = sample_multiple_indices(p_z)
     
                         # Assign new values

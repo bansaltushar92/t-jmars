@@ -74,14 +74,6 @@ class Indexer:
             idx = movie_dict[movie]
             movie_list[idx] = movie 
         
-        rating_matrix = np.zeros((nu, nm))
-        for review in self.reviews:
-            user = review['reviewerID']   #['user']
-            movie = review['asin']   #['movie']
-            u_idx = user_dict[user]
-            m_idx = movie_dict[movie]
-            rating_matrix[u_idx][m_idx] = review['overall'] #['rating']
-        
         word_dictionary = dict()
         review_matrix = list()
         word_index = 0
@@ -123,4 +115,4 @@ class Indexer:
         review_matrix = np.array(review_matrix)
          
         print(len(movie_dict))
-        return (vocab_size, user_list, movie_list, rating_matrix, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary)
+        return (vocab_size, user_list, movie_list, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary)
