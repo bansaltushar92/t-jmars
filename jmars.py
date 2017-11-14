@@ -11,7 +11,7 @@ from indexer import Indexer
 
 # Constants
 MAX_ITER = 2
-MAX_OPT_ITER = 5
+MAX_OPT_ITER = 2
 
 def main():
     """
@@ -27,7 +27,7 @@ def main():
     logging.info('Reading file %s' % imdb_file)
     imdb.read_file(imdb_file)
     logging.info('File %s read' % imdb_file)
-    (vocab_size, user_list, movie_list, rating_matrix, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean) = imdb.get_mappings()
+    (vocab_size, user_list, movie_list, rating_matrix, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary) = imdb.get_mappings()
     
 
     # Get number of users and movies
@@ -42,15 +42,14 @@ def main():
         logging.info('Running iteration %d of Gibbs EM' % it)
         logging.info('Running E-Step - Gibbs Sampling')
         gibbs_sampler = GibbsSampler(5,A,2)
-        Nums,Numas,Numa = gibbs_sampler.run(rating_matrix, review_map, user_dict, movie_dict)
-        # Nums = np.zeros((R,2))
-        # Numas = np.zeros((R,A,2))
-        # Numa = np.zeros((R,A))
+        Nums,Numas,Numa = gibbs_sampler.run(vocab_size, review_matrix, review_map, user_dict, movie_dict, movie_reviews, word_dictionary)
+        #Nums = np.zeros((R,2))
+        #Numas = np.zeros((R,A,2))
+        #Numa = np.zeros((R,A))
         logging.info('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
             x, f, d = optimizer(Nums,Numas,Numa,rating_list,t_mean)
-            print ('Final loss after: ', MAX_OPT_ITER, ' is ', f)
-
-
+            print ('Final loss after: ', i, ' is ', f)
+    
 if __name__ == "__main__":
     main()

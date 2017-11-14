@@ -82,9 +82,10 @@ class Indexer:
             m_idx = movie_dict[movie]
             rating_matrix[u_idx][m_idx] = review['overall'] #['rating']
         
-        dictionary = dict()
+        word_dictionary = dict()
         review_matrix = list()
-        for review in self.reviews:
+        word_index = 0
+#        for review in self.reviews:
 #            if type(review['review']) == str:
 #                temp = review['review']
 #            else:
@@ -93,22 +94,33 @@ class Indexer:
 #                except:
 #                    continue
             #arr = clean_review(temp)
-            rating_list.append({'u': user_dict[review['reviewerID']], 'm': movie_dict[review['asin']], 't': review['unixReviewTime'], 'r':review['overall']})
-            temp = review['reviewText']
+
+        
+        
+        review_map = list()
+        movie_reviews = [[] for o in range(len(movie_dict))]
+        for index in range(len(self.reviews)):
+            
+            review_map.append(
+            {
+                'user' : self.reviews[index]['reviewerID'],  #['user'],
+                'movie' : self.reviews[index]['asin']  #['movie']
+            })
+            
+            movie_reviews[movie_dict[self.reviews[index]['asin']]].append((self.reviews[index]['reviewText'], index))
+            
+            rating_list.append({'u': user_dict[self.reviews[index]['reviewerID']], 'm': movie_dict[self.reviews[index]['asin']], 't': self.reviews[index]['unixReviewTime'], 'r':self.reviews[index]['overall']})
+            temp = self.reviews[index]['reviewText']
             arr = temp.split()
             review_matrix.append(arr)
             for ar in arr:
                 ar = ar.strip()
-                if ar not in dictionary:
-                    dictionary[ar] = 1 
+                if ar not in word_dictionary:
+                    word_dictionary[ar] = word_index
+                    word_index += 1
         
-        vocab_size = len(dictionary.keys())
+        vocab_size = len(word_dictionary.keys())
         review_matrix = np.array(review_matrix)
-        review_map = list()
-        for review in self.reviews:
-            review_map.append(
-            {
-                'user' : review['reviewerID'],  #['user'],
-                'movie' : review['asin']  #['movie']
-            })
-        return (vocab_size, user_list, movie_list, rating_matrix, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean)
+         
+        print(len(movie_dict))
+        return (vocab_size, user_list, movie_list, rating_matrix, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary)
