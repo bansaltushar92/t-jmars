@@ -2,34 +2,44 @@ from constants import *
 import numpy as np
 from scipy.sparse import dok_matrix
 
+def dev_t(t, tu_mean):
+    # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
+    return 0.0
+
 # Joint aspect distribution
 def joint_aspect(u, m):
     """
     Returns the joint aspect distribution
     """
-    u_a = theta_u[u].T
-    m_a = theta_m[m].T
-    um_a = np.exp(np.add(u_a, m_a))
-    theta_um = um_a / np.sum(um_a)
-    return theta_um
+    
+    num_theta_uma = np.exp(theta_u[u] + dev_t(t, t_mean[u])*alpha_tu[u] + theta_m[m])
+    theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
+
+    return theta_uma
 
 def predicted_rating(u, m):
     """
     Computes the predicted rating for user u on movie m
     """
-    theta_um = joint_aspect(u, m)
-    temp = np.diag((np.dot(M_a.T, theta_um)).reshape(K))
-    r = v_u[u].dot(temp).dot(v_m[m].T) + b_o + b_u[u] + b_m[m]   ### Change to same as optimizer
-    return r.sum()
+
+    theta_uma = joint_aspect(u, m)
+    M_sum = np.dot(theta_uma, M_a)
+
+    v_ut = v_u[u] + dev_t(t, t_mean[u])*alpha_vu[u]
+    b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
+
+    r = np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m[m].T) + b_o + b_ut + b_m[m]  
+    return r
 
 def predicted_aspect_rating(u, m, a):
     """
     Computes the predicted rating for user u on movie m and aspect a
     """
+    v_ut = v_u[u] + dev_t(t, t_mean[u])*alpha_vu[u]
+    b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
     
-    temp = np.diag(M_a[a])
-    r = v_u[u].dot(temp).dot(v_m[m].T) + b_o + b_u[u] + b_m[m]
-    return r.sum()
+    r = np.dot(np.dot(v_ut, np.diag(M_a[a])), v_m[m].T) + b_o + b_ut + b_m[m]
+    return r
 
 def aspect_sentiment_probability(s, u, m, a):
     """

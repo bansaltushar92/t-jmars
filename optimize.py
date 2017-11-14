@@ -52,7 +52,7 @@ def func(params, *args):
     
     theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
 
-    M_sum = np.dot(num_theta_uma, M_a)
+    M_sum = np.dot(theta_uma, M_a)
     
     loss1 = 0
     loss3 = 0
@@ -115,7 +115,7 @@ def fprime(params, *args):
         num_theta_uma[i] = np.exp(theta_u[u] + dev_t(t, t_mean[u])*alpha_tu[u] + theta_m[m])
     
     theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
-    M_sum = np.dot(num_theta_uma, M_a)
+    M_sum = np.dot(theta_uma, M_a)
 
     for i in range(len(rating_list)):
         m = rating_list[i]['m']
