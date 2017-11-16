@@ -12,7 +12,7 @@ def dev_t(t, tu_mean):
     return 0.0
 
 
-def func(params, *args):
+def func(params, args):
     """
     Computes the value of the objective function required for gradient descent
     """
@@ -41,6 +41,7 @@ def func(params, *args):
     M_a = params[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
     b_o = params[-1]
 
+    r_hat = np.zeros(R)
     num_theta_uma = np.zeros((len(rating_list), A)) 
 
     for i in range(len(rating_list)): 
@@ -77,11 +78,11 @@ def func(params, *args):
     loss4 = (np.multiply(Numa, np.log(theta_uma))).sum()
     total_loss = loss1.sum() - loss2.sum() - loss3.sum() - loss4.sum() 
 
-    print("Learning Paramater " + str(counter) + "... Loss: " + str(total_loss))
+    #print("Learning Paramater " + str(counter) + "... Loss: " + str(total_loss))
     return total_loss
 
 
-def fprime(params, *args):
+def fprime(params, args):
 
     Nums = args[0]
     Numas = args[1]
@@ -230,7 +231,7 @@ def fprime(params, *args):
         
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
-        #print 'final_grad_M_a', final_grad_M_a
+        #print('final_grad_M_a', final_grad_M_a)
 
         return numpy.concatenate((final_grad_alpha_vu.flatten('F'), 
             final_grad_vu.flatten('F'), 
@@ -249,69 +250,19 @@ def fprime(params, *args):
 #     return np.ones((len(params)))
 
 
-def optimizer(Nums,Numas,Numa,rating_list,t_mean):
+def optimizer(Nums,Numas,Numa,rating_list,t_mean, params):
     """
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
     global counter
     counter = 0
-    args = (Nums,Numas,Numa,rating_list,t_mean)
-    initial_values = numpy.concatenate((alpha_vu.flatten('F'), 
-                                        v_u.flatten('F'), 
-                                        alpha_bu.flatten('F'), 
-                                        b_u.flatten('F'), 
-                                        alpha_tu.flatten('F'), 
-                                        theta_u.flatten('F'), 
-                                        v_m.flatten('F'), 
-                                        b_m.flatten('F'), 
-                                        theta_m.flatten('F'), 
-                                        M_a.flatten('F'), 
-                                        np.array([b_o]).flatten('F')))
-    
-    x,f,d = fmin_l_bfgs_b(func, x0=initial_values, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
+    args = [Nums,Numas,Numa,rating_list,t_mean]
+ 
+    learning_rate = 0.005
+    for i in range(2):
+        params -= learning_rate*fprime(params,args)
+        print ('New Loss: ', func(params, args))
+        
+#    x,f,d = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
 
-    assignment(x)
-
-    return x,f,d
-
-
-def assignment(x):
-
-    global alpha_vu
-    global v_u
-    
-    global alpha_bu
-    global b_u
-    
-    global alpha_tu
-    global theta_u
-
-    global v_m
-    global b_m
-    global theta_m
-
-    global M_a
-    global b_o
-
-
-    alpha_vu = x[:(U*K)].reshape((U,K), order='F')
-    v_u = x[(U*K):2*(U*K)].reshape((U,K), order='F')
-    
-    alpha_bu = x[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')
-    b_u = x[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F')
-    
-    alpha_tu = x[2*(U*K) + 2*U:(2*(U*K) + 2*U + U*A)].reshape((U,A), order='F')
-    theta_u = x[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F')
-
-    v_m = x[((2*U*K + 2*U + 2*U*A)):((2*U*K + 2*U + 2*U*A) + M*K)].reshape((M,K), order='F')
-    b_m = x[((2*U*K + 2*U + 2*U*A)+ M*K):((2*U*K + 2*U + 2*U*A) + M*K + M)].reshape((M,1), order='F')
-    theta_m = x[((2*U*K + 2*U + 2*U*A) + M*K + M):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A)].reshape((M,A), order='F')
-
-    M_a = x[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
-    b_o = x[-1]
-
-
-
-
-
-
+    return params,1,2

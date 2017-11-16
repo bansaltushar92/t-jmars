@@ -2,6 +2,42 @@ from constants import *
 import numpy as np
 from scipy.sparse import dok_matrix
 
+
+def assignment(x):
+
+    global alpha_vu
+    global v_u
+    
+    global alpha_bu
+    global b_u
+    
+    global alpha_tu
+    global theta_u
+
+    global v_m
+    global b_m
+    global theta_m
+
+    global M_a
+    global b_o
+
+    alpha_vu = x[:(U*K)].reshape((U,K), order='F')
+    v_u = x[(U*K):2*(U*K)].reshape((U,K), order='F')
+    
+    alpha_bu = x[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')
+    b_u = x[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F')
+    
+    alpha_tu = x[2*(U*K) + 2*U:(2*(U*K) + 2*U + U*A)].reshape((U,A), order='F')
+    theta_u = x[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F')
+
+    v_m = x[((2*U*K + 2*U + 2*U*A)):((2*U*K + 2*U + 2*U*A) + M*K)].reshape((M,K), order='F')
+    b_m = x[((2*U*K + 2*U + 2*U*A)+ M*K):((2*U*K + 2*U + 2*U*A) + M*K + M)].reshape((M,1), order='F')
+    theta_m = x[((2*U*K + 2*U + 2*U*A) + M*K + M):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A)].reshape((M,A), order='F')
+
+    M_a = x[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
+    b_o = x[-1]
+
+
 def dev_t(t, tu_mean):
     # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
     return 0.0
@@ -222,13 +258,15 @@ class GibbsSampler:
 
         return p_z
 
-    def run(self, vocab_size, review_matrix, rating_list, user_dict, movie_dict, movie_reviews, word_dictionary,t_mean, max_iter=1):
+    def run(self, vocab_size, review_matrix, rating_list, user_dict, movie_dict, movie_reviews, word_dictionary,t_mean, params, max_iter=1):
         """
         Perform sampling max_iter times
         """
         self._initialize(vocab_size, review_matrix, rating_list, movie_dict, user_dict, movie_reviews, word_dictionary)
+        
+        assignment(params)
 
-        print (M_a)
+        #print("hello 3 GIBBS_BIATCH", M_a)
         for it in range(max_iter):
             print("iter-> ", it)
             print('Gibbs Sampling Iteration: %d' % it)
@@ -298,3 +336,4 @@ class GibbsSampler:
                         self.topics[(r, i)] = (y, z, s)
             #print(self.Nums[1], self.Numas[1], self.Numa[1])
             return (self.Nums, self.Numas, self.Numa)
+        

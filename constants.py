@@ -28,59 +28,7 @@ sigma_ma = 1.0
 U = 468 #4079
 M = 467 #4670
 R = 1875
-I = 100
 
 beta=0.0001
-# Hidden variables
-
-# Switching variable y
-#y = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
-#y = np.zeros((U, M, I))
-
-# Topic variable z
-#z = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
-#z = np.zeros((U, M, I))
-
-# Sentiment variable s
-#s = np.random.multinomial(1000,[1.0/I]*I,(U,M)) / 1000
-#s = np.zeros((U, M, I))
-
-#dev_t
-alpha_vu = np.random.normal(0,sigma_u,(U, K))
-alpha_bu = np.random.normal(0,sigma_u,(U, 1))
-alpha_tu = np.random.normal(0,sigma_u,(U, A))
-
-#t_mean
-#t_mean = np.zeros(U)
-
-
-# User
-v_u = np.random.normal(0,sigma_u,(U, K))      # Latent factor vector
-b_u = np.random.normal(0,sigma_bu,(U, 1))      # Common bias vector
-theta_u = np.random.normal(0,sigma_ua,(U, A))  # Aspect specific vector
-
-# Movie
-v_m = np.random.normal(0,sigma_m,(M, K))      # Latent factor vector
-b_m = np.random.normal(0,sigma_bm,(M, 1))      # Common bias vector
-theta_m = np.random.normal(0,sigma_ma,(M, A))  # Aspect specific vector
-
-# Common bias
-b_o = np.random.normal(0,sigma_b0) 
-
-# Scaling Matrix
-M_a = np.random.normal(0,sigma_Ma,(A, K))
-
-#Matrices N
-#Nums = np.zeros((U,M,2))
-#Numas = np.zeros((U,M,A,2))
-#Numa = np.zeros((U,M,A))
-
-#epsilon
 epsilon = 5
-
-#Counter
 counter = 1
-
-#rating matrix
-rating_matrix = np.zeros((U,M))
-r_hat = np.zeros(R)

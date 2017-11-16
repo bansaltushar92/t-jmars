@@ -10,7 +10,7 @@ import numpy.matlib
 from indexer import Indexer
 
 # Constants
-MAX_ITER = 2
+MAX_ITER = 20
 MAX_OPT_ITER = 2
 
 def main():
@@ -19,6 +19,42 @@ def main():
     """
     # Download data for NLTK if not already done
     #nltk.download('all')
+
+    ## Initialize
+
+    #dev_t
+    alpha_vu = np.random.normal(0,sigma_u,(U, K))
+    alpha_bu = np.random.normal(0,sigma_u,(U, 1))
+    alpha_tu = np.random.normal(0,sigma_u,(U, A))
+    
+    
+    # User
+    v_u = np.random.normal(0,sigma_u,(U, K))      # Latent factor vector
+    b_u = np.random.normal(0,sigma_bu,(U, 1))      # Common bias vector
+    theta_u = np.random.normal(0,sigma_ua,(U, A))  # Aspect specific vector
+    
+    # Movie
+    v_m = np.random.normal(0,sigma_m,(M, K))      # Latent factor vector
+    b_m = np.random.normal(0,sigma_bm,(M, 1))      # Common bias vector
+    theta_m = np.random.normal(0,sigma_ma,(M, A))  # Aspect specific vector
+    
+    # Common bias
+    b_o = np.random.normal(0,sigma_b0) 
+    
+    # Scaling Matrix
+    M_a = np.random.normal(0,sigma_Ma,(A, K))
+    
+    params = numpy.concatenate((alpha_vu.flatten('F'), 
+                                    v_u.flatten('F'), 
+                                    alpha_bu.flatten('F'), 
+                                    b_u.flatten('F'), 
+                                    alpha_tu.flatten('F'), 
+                                    theta_u.flatten('F'), 
+                                    v_m.flatten('F'), 
+                                    b_m.flatten('F'), 
+                                    theta_m.flatten('F'), 
+                                    M_a.flatten('F'), 
+                                    np.array([b_o]).flatten('F')))
 
     # Read 
     imdb = Indexer()
@@ -39,17 +75,17 @@ def main():
     # Run Gibbs EM
     x = None
     for it in range(1,MAX_ITER+1):
-        logging.info('Running iteration %d of Gibbs EM' % it)
-        logging.info('Running E-Step - Gibbs Sampling')
+        print('Running iteration %d of Gibbs EM' % it)
+        print('Running E-Step - Gibbs Sampling')
         gibbs_sampler = GibbsSampler(5,A,2)
-        Nums,Numas,Numa = gibbs_sampler.run(vocab_size, review_matrix, rating_list, user_dict, movie_dict, movie_reviews, word_dictionary, t_mean)
-        #Nums = np.zeros((R,2))
-        #Numas = np.zeros((R,A,2))
-        #Numa = np.zeros((R,A))
-        logging.info('Running M-Step - Gradient Descent')
+        Nums,Numas,Numa = gibbs_sampler.run(vocab_size, review_matrix, rating_list, user_dict, movie_dict, movie_reviews, word_dictionary, t_mean, params)
+#        Nums = np.zeros((R,2))
+#        Numas = np.zeros((R,A,2))
+#        Numa = np.zeros((R,A))
+        print('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
-            x, f, d = optimizer(Nums,Numas,Numa,rating_list,t_mean)
-            print ('Final loss after: ', i, ' is ', f)
+            params, f, d = optimizer(Nums,Numas,Numa,rating_list,t_mean, params)
+#            print ('Final loss after: ', i, ' is ', f)
     
 if __name__ == "__main__":
     main()
