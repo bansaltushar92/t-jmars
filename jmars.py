@@ -83,18 +83,21 @@ def main():
     logging.info('No. of users U = %d' % Users)
     logging.info('No. of movies M = %d' % Movies)
 
-    # Run Gibbs EM
-    x = None
-    for it in range(1,MAX_ITER+1):
-        print('Running iteration %d of Gibbs EM' % it)
-        print('Running E-Step - Gibbs Sampling')
-        gibbs_sampler = GibbsSampler(vocab_size,
+
+    # change gibbs sampler initialization
+    gibbs_sampler = GibbsSampler(vocab_size,
                                     review_matrix,
                                     rating_list,
                                     movie_dict,
                                     user_dict,
                                     movie_reviews,
                                     word_dictionary)
+
+
+    # Run Gibbs EM
+    for it in range(1,MAX_ITER+1):
+        print('Running iteration %d of Gibbs EM' % it)
+        print('Running E-Step - Gibbs Sampling')
 
         Nums,Numas,Numa = gibbs_sampler.run(vocab_size, 
                                             review_matrix, 
@@ -105,9 +108,9 @@ def main():
                                             word_dictionary, 
                                             t_mean, 
                                             params)
-#        Nums = np.zeros((R,2))
-#        Numas = np.zeros((R,A,2))
-#        Numa = np.zeros((R,A))
+        # Nums = np.zeros((R,2))
+        # Numas = np.zeros((R,A,2))
+        # Numa = np.zeros((R,A))
         print('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
             params, f, d = optimizer(Nums,Numas,Numa,rating_list,t_mean, params)

@@ -12,7 +12,7 @@ def dev_t(t, tu_mean):
     return 0.0
 
 
-def func(params, args):
+def func(params, *args):
     """
     Computes the value of the objective function required for gradient descent
     """
@@ -67,7 +67,7 @@ def func(params, args):
         v_ut = v_u[u] + dev_t(t, t_mean[u])*alpha_vu[u]
         b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
         r_hat[i] =  np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m[m].T) + b_o + b_ut + b_m[m]
-        loss1 += epsilon*(r - r_hat[i])
+        loss1 += epsilon*(r - r_hat[i])**2
         
         for j in range(A):
             ruma = np.dot(np.dot(v_ut, np.diag(M_a[j])), v_m[m].T) + b_o + b_ut + b_m[m]
@@ -82,7 +82,7 @@ def func(params, args):
     return total_loss
 
 
-def fprime(params, args):
+def fprime(params, *args):
 
     Nums = args[0]
     Numas = args[1]
@@ -117,6 +117,25 @@ def fprime(params, args):
     
     theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
     M_sum = np.dot(theta_uma, M_a)
+
+# MAde changes here.
+
+    final_grad_vu = np.zeros((U,K))
+    final_grad_alpha_vu = np.zeros((U,K))
+        
+    final_grad_bu = np.zeros((U,1))
+    final_grad_alpha_bu = np.zeros((U,1))
+
+    final_grad_thetau = np.zeros((U,A))
+    final_grad_alpha_thetau = np.zeros((U,A))
+
+    final_grad_vm = np.zeros((M,K))
+    final_grad_b_m = np.zeros((M,1))     
+    final_grad_theta_m = np.zeros((M,A))
+        
+    final_grad_M_a = np.zeros((A,K))
+    final_grad_bo = 0.
+
 
     for i in range(len(rating_list)):
         m = rating_list[i]['m']
@@ -197,22 +216,6 @@ def fprime(params, args):
 
         ############### Final.
 
-        final_grad_vu = np.zeros((U,K))
-        final_grad_alpha_vu = np.zeros((U,K))
-        
-        final_grad_bu = np.zeros((U,1))
-        final_grad_alpha_bu = np.zeros((U,1))
-
-        final_grad_thetau = np.zeros((U,A))
-        final_grad_alpha_thetau = np.zeros((U,A))
-
-        final_grad_vm = np.zeros((M,K))
-        final_grad_b_m = np.zeros((M,1))     
-        final_grad_theta_m = np.zeros((M,A))
-        
-        final_grad_M_a = np.zeros((A,K))
-        final_grad_bo = 0.
-
         final_grad_vu[u] += (rating_error - gradB_factor)*gradA_vu - gradC_vu
         final_grad_alpha_vu[u] += (rating_error - gradB_factor)*gradA_alpha_vu - gradC_alpha_vu
         
@@ -231,9 +234,12 @@ def fprime(params, args):
         
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
-        #print('final_grad_M_a', final_grad_M_a)
+    print('v_u[0]_grad', final_grad_vu[0])
+    print('v_u[1]_grad', final_grad_vu[1])
+    print('v_u[2]_grad', final_grad_vu[2])
+    print('v_u[3]_grad', final_grad_vu[3])
 
-        return numpy.concatenate((final_grad_alpha_vu.flatten('F'), 
+    return numpy.concatenate((final_grad_alpha_vu.flatten('F'), 
             final_grad_vu.flatten('F'), 
             final_grad_alpha_bu.flatten('F'), 
             final_grad_bu.flatten('F'), 
@@ -258,11 +264,11 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params):
     counter = 0
     args = [Nums,Numas,Numa,rating_list,t_mean]
  
-    learning_rate = 0.005
-    for i in range(2):
-        params -= learning_rate*fprime(params,args)
-        print ('New Loss: ', func(params, args))
+    # learning_rate = 0.02
+    # for i in range(2):
+    #     params -= learning_rate*fprime(params,args)
+    #     print ('New Loss: ', func(params, args))
         
-#    x,f,d = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
-
+    params,f,d = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
+    print ('New Loss: ', f)
     return params,1,2

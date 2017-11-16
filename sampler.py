@@ -23,6 +23,10 @@ def assignment(x):
 
     alpha_vu = x[:(U*K)].reshape((U,K), order='F')
     v_u = x[(U*K):2*(U*K)].reshape((U,K), order='F')
+    print ('u0', v_u[0])
+    print ('u1', v_u[1])
+    print ('u0', v_u[2])
+    print ('u1', v_u[3])
     
     alpha_bu = x[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')
     b_u = x[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F')
