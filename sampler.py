@@ -110,31 +110,22 @@ def sample_multiple_indices(p):
     """
     (Y, Z, S) = p.shape
     dist = list()
-    for y in range(Y):
-        for z in range(Z):
-            for s in range(S):
+    for y in range(self.Y):
+        for z in range(self.Z):
+            for s in range(self.S):
                 dist.append(p[y,z,s])
     index = sample_multinomial(dist)
-    y = index // (Z * S)                 #Get indices of matrix from the list indices.
-    rem = index % (Z * S)
-    z = rem // S
-    s = rem % S
-    #print(y, z, s)
+    y = index // (self.Z * self.S)                 #Get indices of matrix from the list indices.
+    rem = index % (self.Z * self.S)
+    z = rem // self.S
+    s = rem % self.S
     return (y, z, s)
-
-def word_indices(vec):
-    """
-    Returns non-zero entries of vec one at a time
-    """
-#    for idx in vec.nonzero()[0]:
-#        for i in range(int(vec[idx])):
-#            yield idx
 
 class GibbsSampler:
     """
     Class to handle Gibbs Sampling
     """
-    def __init__(self, Y, Z, S):
+    def __init__(self, vocab_size, review_matrix, rating_list, movie_dict, user_dict, movie_reviews, word_dictionary):
         """
         Constructor
         """
@@ -146,11 +137,6 @@ class GibbsSampler:
         self.R = R
         self.A = A
 
-    def _initialize(self, vocab_size, review_matrix, rating_list, movie_dict, user_dict, movie_reviews, word_dictionary):
-
-        """
-        Initialize all variables needed in the run step
-        """
         self.vocab_size = vocab_size
         self.n_reviews = len(review_matrix)
 
@@ -167,15 +153,16 @@ class GibbsSampler:
         self.cyzw = np.zeros((self.Y, self.Z, self.vocab_size))
         # Number of times y occurs with z
         self.cyz = np.zeros((self.Y, self.Z))
-
-        
         # Number of times y occurs with m and w
-#        self.cymw = dok_matrix((self.Y, self.M, self.vocab_size), dtype=np.float)
+        self.cmyw = np.array([dok_matrix((self.Y, self.vocab_size), dtype=np.float) for _ in range(self.M)])
         # Number of times y occurs with m
-#        self.cym = np.zeros((self.Y, self.M))
+        self.cym = np.zeros((self.Y, self.M))
 
-        self.Nums = np.zeros((self.R,2))
-        self.Numas = np.zeros((self.R,self.A,2))
+        self.senti_map = [1,-1]
+
+
+        self.Nums = np.zeros((self.R,self.S))
+        self.Numas = np.zeros((self.R,self.A,self.S))
         self.Numa = np.zeros((self.R,self.A))
 
         self.topics = {}
@@ -195,17 +182,8 @@ class GibbsSampler:
                     self.cys[y,s] += 1
                     self.cyzw[y,z,w] += 1
                     self.cyz[y,z] += 1
-                    
-                    #m = np.random.randint(self.M)
-                    #self.cymw[y,m,w] += 1
-                    #self.cym[y,m] += 1
-    
-                    # Get Movie and User
-    
-                    #m = movie_dict[review_map[r]['movie']]
-                    #u = user_dict[review_map[r]['user']]
-    
-                     # TODO update nums
+                    self.cmyw[movie][y,w] += 1
+                    self.cym[y, movie] += 1
     
                     self.Nums[r,s] +=1
                     self.Numas[r,z,s] +=1
@@ -214,7 +192,7 @@ class GibbsSampler:
                     self.topics[(r, i)] = (y, z, s)
             #print(list((review_matrix[self.n_reviews-1, :])))
 
-    def _conditional_distribution(self, u, w, m, t, t_mean_u, cymw, cym):
+    def _conditional_distribution(self, u, w, m, t, t_mean_u):
         """
         Returns the CPD for word w in the review by user u for movie m
         """
@@ -230,7 +208,7 @@ class GibbsSampler:
             for s in range(self.S):
                 p_z[1,z,s] = (self.cy[1] + gamma) / (self.c + 5 * gamma)
                 p_z[1,z,s] = (p_z[1,z,s] * (self.cysw[1,s,w] + eta)) / (self.cys[1,s] + eta)
-                p_z[1,z,s] = p_z[1,z,s] * aggregate_sentiment_probability(s,u,m,t, t_mean_u)
+                p_z[1,z,s] = p_z[1,z,s] * aggregate_sentiment_probability(self.senti_map[s],u,m,t, t_mean_u)
 
         # y = 2
         for z in range(self.Z):
@@ -238,7 +216,7 @@ class GibbsSampler:
                 p_z[2,z,s] = (self.cy[2] + gamma) / (self.c + 5 * gamma)
                 p_z[2,z,s] = (p_z[2,z,s] * (self.cyzw[2,z,w] + eta)) / (self.cyz[2,z] + eta)
                 p_z[2,z,s] = p_z[2,z,s] * (joint_aspect(u, m,t, t_mean_u)[z])
-                p_z[2,z,s] = p_z[2,z,s] * aspect_sentiment_probability(s,u,m,z,t, t_mean_u)
+                p_z[2,z,s] = p_z[2,z,s] * aspect_sentiment_probability(self.senti_map[s],u,m,z,t, t_mean_u)
 
         # y = 3
         for z in range(self.Z):
@@ -251,18 +229,18 @@ class GibbsSampler:
         for z in range(self.Z):
             for s in range(self.S):
                 p_z[4,z,s] = (self.cy[4] + gamma) / (self.c + 5 * gamma)
-                p_z[4,z,s] = (p_z[4,z,s] * (cymw[4,w] + eta)) / (cym[4] + eta)
+                p_z[4,z,s] = (p_z[4,z,s] * (self.cmyw[movie][4,w] + eta)) / (self.cym[4] + eta)
 
         # Normalize
         p_z = p_z / p_z.sum()
 
         return p_z
 
+
     def run(self, vocab_size, review_matrix, rating_list, user_dict, movie_dict, movie_reviews, word_dictionary,t_mean, params, max_iter=1):
         """
         Perform sampling max_iter times
         """
-        self._initialize(vocab_size, review_matrix, rating_list, movie_dict, user_dict, movie_reviews, word_dictionary)
         
         assignment(params)
 
@@ -274,17 +252,6 @@ class GibbsSampler:
                 
                 if(movie%1000 == 0):
                     print(movie)
-                
-                # Number of times y occurs with m and w
-                cymw = dok_matrix((self.Y, self.vocab_size), dtype=np.float)
-                # Number of times y occurs with m
-                cym = np.zeros(self.Y)
-                
-                for (rev,r) in movie_reviews[movie]:
-                    for w in rev.strip().split():       ## map w to it's index
-                        (y, z, s) = (np.random.randint(self.Y), np.random.randint(self.Z), np.random.randint(self.S))
-                        cymw[y,word_dictionary[w]] += 1
-                        cym[y] += 1
                 
                 
                 for (rev,r) in movie_reviews[movie]:
@@ -302,8 +269,8 @@ class GibbsSampler:
                         self.cyzw[y,z,w] -= 1
                         self.cyz[y,z] -= 1
                         
-                        cymw[y,w] -= 1
-                        cym[y] -= 1
+                        self.cmyw[movie][y,w] -= 1
+                        self.cym[y, movie] -= 1
     
                         # Get next distribution
                         
@@ -313,7 +280,7 @@ class GibbsSampler:
                         self.Numas[r,z,s] -=1
                         self.Numa[r,z] -=1
                         
-                        p_z = self._conditional_distribution(u, w, movie, t, t_mean[u], cymw, cym) # Eq. 13 for all values of y,z,s -> computing tensor
+                        p_z = self._conditional_distribution(u, w, movie, t, t_mean[u]) # Eq. 13 for all values of y,z,s -> computing tensor
                         (y, z, s) = sample_multiple_indices(p_z)
     
                         # Assign new values
@@ -326,8 +293,8 @@ class GibbsSampler:
                         self.cyzw[y,z,w] += 1
                         self.cyz[y,z] += 1
                         
-                        cymw[y,w] += 1
-                        cym[y] += 1
+                        self.cmyw[movie][y,w] += 1
+                        self.cym[y, movie] += 1
                         
                         self.Nums[r,s] +=1
                         self.Numas[r,z,s] +=1

@@ -63,7 +63,18 @@ def main():
     logging.info('Reading file %s' % imdb_file)
     imdb.read_file(imdb_file)
     logging.info('File %s read' % imdb_file)
-    (vocab_size, user_list, movie_list, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary) = imdb.get_mappings()
+    
+    (vocab_size, 
+        user_list,  # remove
+        movie_list, 
+        review_matrix, 
+        review_map, 
+        user_dict, 
+        movie_dict, 
+        rating_list, 
+        t_mean, 
+        movie_reviews, 
+        word_dictionary) = imdb.get_mappings()
     
 
     # Get number of users and movies
@@ -77,8 +88,23 @@ def main():
     for it in range(1,MAX_ITER+1):
         print('Running iteration %d of Gibbs EM' % it)
         print('Running E-Step - Gibbs Sampling')
-        gibbs_sampler = GibbsSampler(5,A,2)
-        Nums,Numas,Numa = gibbs_sampler.run(vocab_size, review_matrix, rating_list, user_dict, movie_dict, movie_reviews, word_dictionary, t_mean, params)
+        gibbs_sampler = GibbsSampler(vocab_size,
+                                    review_matrix,
+                                    rating_list,
+                                    movie_dict,
+                                    user_dict,
+                                    movie_reviews,
+                                    word_dictionary)
+
+        Nums,Numas,Numa = gibbs_sampler.run(vocab_size, 
+                                            review_matrix, 
+                                            rating_list, 
+                                            user_dict, 
+                                            movie_dict, 
+                                            movie_reviews, 
+                                            word_dictionary, 
+                                            t_mean, 
+                                            params)
 #        Nums = np.zeros((R,2))
 #        Numas = np.zeros((R,A,2))
 #        Numa = np.zeros((R,A))

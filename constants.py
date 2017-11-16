@@ -20,6 +20,12 @@ A = 6
 # Number of latent factors
 K = 5
 
+# Language Models
+Y = 5
+
+# Sentiment
+S = 2
+
 #Aspect Sigma
 sigma_ua = 0.1
 sigma_ma = 1.0
@@ -32,3 +38,4 @@ R = 1875
 beta=0.0001
 epsilon = 5
 counter = 1
+
