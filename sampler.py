@@ -110,15 +110,15 @@ def sample_multiple_indices(p):
     """
     (Y, Z, S) = p.shape
     dist = list()
-    for y in range(self.Y):
-        for z in range(self.Z):
-            for s in range(self.S):
+    for y in range(Y):
+        for z in range(Z):
+            for s in range(S):
                 dist.append(p[y,z,s])
     index = sample_multinomial(dist)
-    y = index // (self.Z * self.S)                 #Get indices of matrix from the list indices.
-    rem = index % (self.Z * self.S)
-    z = rem // self.S
-    s = rem % self.S
+    y = index // (Z * S)                 #Get indices of matrix from the list indices.
+    rem = index % (Z * S)
+    z = rem // S
+    s = rem % S
     return (y, z, s)
 
 class GibbsSampler:
@@ -130,7 +130,7 @@ class GibbsSampler:
         Constructor
         """
         self.Y = Y
-        self.Z = Z
+        self.Z = A
         self.S = S
         self.M = M
         self.U = U
@@ -229,7 +229,7 @@ class GibbsSampler:
         for z in range(self.Z):
             for s in range(self.S):
                 p_z[4,z,s] = (self.cy[4] + gamma) / (self.c + 5 * gamma)
-                p_z[4,z,s] = (p_z[4,z,s] * (self.cmyw[movie][4,w] + eta)) / (self.cym[4] + eta)
+                p_z[4,z,s] = (p_z[4,z,s] * (self.cmyw[m][4,w] + eta)) / (self.cym[4,m] + eta)
 
         # Normalize
         p_z = p_z / p_z.sum()
