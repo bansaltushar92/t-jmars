@@ -115,4 +115,4 @@ class Indexer:
         review_matrix = np.array(review_matrix)
          
         print(len(movie_dict))
-        return (vocab_size, user_list, movie_list, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary)
+        return (vocab_size, user_list, movie_list, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary,nu,nm,len(self.reviews))
