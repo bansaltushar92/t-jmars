@@ -11,7 +11,7 @@ from indexer import Indexer
 
 # Constants
 MAX_ITER = 20
-MAX_OPT_ITER = 2
+MAX_OPT_ITER = 10
 
 def main():
     """

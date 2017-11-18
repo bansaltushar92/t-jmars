@@ -234,10 +234,10 @@ def fprime(params, *args):
         
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
-    print('v_u[0]_grad', final_grad_vu[0])
-    print('v_u[1]_grad', final_grad_vu[1])
-    print('v_u[2]_grad', final_grad_vu[2])
-    print('v_u[3]_grad', final_grad_vu[3])
+    # print('v_u[0]_grad', final_grad_vu[0])
+    # print('v_u[1]_grad', final_grad_vu[1])
+    # print('v_u[2]_grad', final_grad_vu[2])
+    # print('v_u[3]_grad', final_grad_vu[3])
 
     return numpy.concatenate((final_grad_alpha_vu.flatten('F'), 
             final_grad_vu.flatten('F'), 
