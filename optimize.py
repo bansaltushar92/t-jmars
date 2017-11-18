@@ -1,9 +1,7 @@
 from constants import *
-from sampler import GibbsSampler
+import math
 import numpy as np
-import scipy as sp
 from scipy.optimize import fmin_l_bfgs_b
-from numpy import linalg as LA
 import numpy.matlib
 
 
@@ -11,35 +9,85 @@ def dev_t(t, tu_mean):
     # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
     return 0.0
 
+def assign_params(x,U,M,R):
+    prev_min = 0; prev_max = U*K
+    alpha_vu = x[prev_min:prev_max].reshape((U,K), order='F')
+    
+    prev_min = prev_max; prev_max += U*K 
+    v_u = x[prev_min:prev_max].reshape((U,K), order='F')
+
+    prev_min = prev_max; prev_max += U
+    alpha_bu = x[prev_min:prev_max].reshape((U,1), order='F')
+    
+    prev_min = prev_max; prev_max += U
+    b_u = x[prev_min:prev_max].reshape((U,1), order='F')
+    
+    prev_min = prev_max; prev_max += U*A
+    alpha_tu = x[prev_min:prev_max].reshape((U,A), order='F')
+    
+    prev_min = prev_max; prev_max += U*A
+    theta_u = x[prev_min:prev_max].reshape((U,A), order='F')
+    
+    prev_min = prev_max; prev_max += M*K
+    v_m = x[prev_min:prev_max].reshape((M,K), order='F')
+    
+    prev_min = prev_max; prev_max += M*1
+    b_m = x[prev_min:prev_max].reshape((M,1), order='F')
+    
+    prev_min = prev_max; prev_max += M*A
+    theta_m = x[prev_min:prev_max].reshape((M,A), order='F')
+    
+    prev_min = prev_max; prev_max += A*K
+    M_a = x[prev_min:prev_max].reshape((A,K), order='F')
+    
+    b_o = x[-1]
+    
+    return (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o)
+
+
+def calculate_rmse(x,U,M,t_mean,rating_list):
+    
+    (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o) = assign_params(x,U,M,len(rating_list))
+    
+    num_theta_uma = np.zeros((len(rating_list), A)) 
+    for i in range(len(rating_list)): 
+        m = rating_list[i]['m']
+        u = rating_list[i]['u']
+        t = rating_list[i]['t']
+        num_theta_uma[i] = np.exp(theta_u[u] + dev_t(t, t_mean[u])*alpha_tu[u] + theta_m[m])
+        
+    
+    theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
+
+    M_sum = np.dot(theta_uma, M_a)
+    RMSE = 0
+    for i in range(len(rating_list)):
+        m = rating_list[i]['m']
+        u = rating_list[i]['u']
+        t = rating_list[i]['t']
+        r = rating_list[i]['r']
+
+        v_ut = v_u[u] + dev_t(t, t_mean[u])*alpha_vu[u]
+        b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
+        r_hat =  np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m[m].T) + b_o + b_ut + b_m[m]
+        RMSE += (r - r_hat)**2
+        
+    return math.sqrt(RMSE/len(rating_list))
+
 
 def func(params, *args):
     """
     Computes the value of the objective function required for gradient descent
     """
     
-    global counter
-    
-    counter += 1
     Nums = args[0]
     Numas = args[1]
     Numa = args[2]
     rating_list = args[3]
     t_mean = args[4]
+    U = args[5]; M = args[6]; R = args[7]
     
-    alpha_vu = params[:(U*K)].reshape((U,K), order='F')
-    v_u = params[(U*K):2*(U*K)].reshape((U,K), order='F')
-    alpha_bu = params[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')
-    b_u = params[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F')
-    alpha_tu = params[2*(U*K) + 2*U:(2*(U*K) + 2*U + U*A)].reshape((U,A), order='F')
-    theta_u = params[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F')
-
-    v_m = params[((2*U*K + 2*U + 2*U*A)):((2*U*K + 2*U + 2*U*A) + M*K)].reshape((M,K), order='F')
-    b_m = params[((2*U*K + 2*U + 2*U*A)+ M*K):((2*U*K + 2*U + 2*U*A) + M*K + M)].reshape((M,1), order='F')
-    theta_m = params[((2*U*K + 2*U + 2*U*A) + M*K + M):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A)].reshape((M,A), order='F')
-
-
-    M_a = params[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
-    b_o = params[-1]
+    (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o) = assign_params(params,U,M,R)
 
     r_hat = np.zeros(R)
     num_theta_uma = np.zeros((len(rating_list), A)) 
@@ -78,7 +126,6 @@ def func(params, *args):
     loss4 = (np.multiply(Numa, np.log(theta_uma))).sum()
     total_loss = loss1.sum() - loss2.sum() - loss3.sum() - loss4.sum() 
 
-    #print("Learning Paramater " + str(counter) + "... Loss: " + str(total_loss))
     return total_loss
 
 
@@ -89,22 +136,9 @@ def fprime(params, *args):
     Numa = args[2]
     rating_list = args[3]
     t_mean = args[4]
-
-    alpha_vu = params[:(U*K)].reshape((U,K), order='F')
-    v_u = params[(U*K):2*(U*K)].reshape((U,K), order='F')
+    U = args[5]; M = args[6]; R = args[7]
     
-    alpha_bu = params[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')
-    b_u = params[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F')
-    
-    alpha_tu = params[2*(U*K) + 2*U:(2*(U*K) + 2*U + U*A)].reshape((U,A), order='F')
-    theta_u = params[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F')
-
-    v_m = params[((2*U*K + 2*U + 2*U*A)):((2*U*K + 2*U + 2*U*A) + M*K)].reshape((M,K), order='F')
-    b_m = params[((2*U*K + 2*U + 2*U*A)+ M*K):((2*U*K + 2*U + 2*U*A) + M*K + M)].reshape((M,1), order='F')
-    theta_m = params[((2*U*K + 2*U + 2*U*A) + M*K + M):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A)].reshape((M,A), order='F')
-
-    M_a = params[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
-    b_o = params[-1]
+    (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o) = assign_params(params,U,M,R)
 
     num_theta_uma = np.zeros((len(rating_list), A))
 
@@ -214,13 +248,12 @@ def fprime(params, *args):
         gradD_thetam = np.dot(numa_by_theta_uma, softmax_matrix)
         gradD_alpha_thetau = gradD_thetau*dev_t(t, t_mean[u])
 
-        ############### Final.
+        ############### Final
 
         final_grad_vu[u] += (rating_error - gradB_factor)*gradA_vu - gradC_vu
         final_grad_alpha_vu[u] += (rating_error - gradB_factor)*gradA_alpha_vu - gradC_alpha_vu
         
         final_grad_bu[u] += (rating_error - gradB_factor)*gradA_bu - gradC_bu
-        #print(rating_error.shape , gradB_factor.shape, gradA_alpha_bu.shape , gradC_alpha_bu.shape)
         final_grad_alpha_bu[u] += (rating_error - gradB_factor)*gradA_alpha_bu - gradC_alpha_bu
 
         final_grad_thetau[u] += (rating_error - gradB_factor)*gradA_thetau - gradD_thetau
@@ -234,10 +267,6 @@ def fprime(params, *args):
         
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
-    # print('v_u[0]_grad', final_grad_vu[0])
-    # print('v_u[1]_grad', final_grad_vu[1])
-    # print('v_u[2]_grad', final_grad_vu[2])
-    # print('v_u[3]_grad', final_grad_vu[3])
 
     return numpy.concatenate((final_grad_alpha_vu.flatten('F'), 
             final_grad_vu.flatten('F'), 
@@ -252,23 +281,12 @@ def fprime(params, *args):
             np.array([final_grad_bo]).flatten('F')))
 
 
-# def fprime(params, *args):
-#     return np.ones((len(params)))
-
-
-def optimizer(Nums,Numas,Numa,rating_list,t_mean, params):
+def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R):
     """
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
-    global counter
-    counter = 0
-    args = [Nums,Numas,Numa,rating_list,t_mean]
- 
-    # learning_rate = 0.02
-    # for i in range(2):
-    #     params -= learning_rate*fprime(params,args)
-    #     print ('New Loss: ', func(params, args))
+    args = [Nums,Numas,Numa,rating_list,t_mean,U,M,R]
         
-    params,f,d = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
-    print ('New Loss: ', f)
-    return params,1,2
+    params,l,_ = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
+    print ('Loss: ' + str(l) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
+    return params

@@ -3,45 +3,6 @@ import numpy as np
 from scipy.sparse import dok_matrix
 
 
-def assignment(x):
-
-    global alpha_vu
-    global v_u
-    
-    global alpha_bu
-    global b_u
-    
-    global alpha_tu
-    global theta_u
-
-    global v_m
-    global b_m
-    global theta_m
-
-    global M_a
-    global b_o
-
-    alpha_vu = x[:(U*K)].reshape((U,K), order='F')
-    v_u = x[(U*K):2*(U*K)].reshape((U,K), order='F')
-    # print ('u0', v_u[0])
-    # print ('u1', v_u[1])
-    # print ('u0', v_u[2])
-    # print ('u1', v_u[3])
-    
-    alpha_bu = x[2*(U*K):2*(U*K) + U].reshape((U,1), order='F')
-    b_u = x[2*(U*K) + U:2*(U*K) + 2*U].reshape((U,1), order='F')
-    
-    alpha_tu = x[2*(U*K) + 2*U:(2*(U*K) + 2*U + U*A)].reshape((U,A), order='F')
-    theta_u = x[(2*U*K + 2*U + U*A): (2*U*K + 2*U + 2*U*A)].reshape((U,A), order='F')
-
-    v_m = x[((2*U*K + 2*U + 2*U*A)):((2*U*K + 2*U + 2*U*A) + M*K)].reshape((M,K), order='F')
-    b_m = x[((2*U*K + 2*U + 2*U*A)+ M*K):((2*U*K + 2*U + 2*U*A) + M*K + M)].reshape((M,1), order='F')
-    theta_m = x[((2*U*K + 2*U + 2*U*A) + M*K + M):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A)].reshape((M,A), order='F')
-
-    M_a = x[((2*U*K + 2*U + 2*U*A) + M*K + M + M*A):((2*U*K + 2*U + 2*U*A) + M*K + M + M*A + A*K)].reshape((A,K), order='F')
-    b_o = x[-1]
-
-
 def dev_t(t, tu_mean):
     # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
     return 0.0
@@ -129,7 +90,8 @@ class GibbsSampler:
     """
     Class to handle Gibbs Sampling
     """
-    def __init__(self, vocab_size, review_matrix, rating_list, movie_dict, user_dict, movie_reviews, word_dictionary):
+    def __init__(self, vocab_size, review_matrix, rating_list, movie_dict, user_dict, movie_reviews, word_dictionary,
+                 U, M, R):
         """
         Constructor
         """
@@ -161,7 +123,7 @@ class GibbsSampler:
         self.cmyw = np.array([dok_matrix((self.Y, self.vocab_size), dtype=np.float) for _ in range(self.M)])
         # Number of times y occurs with m
         self.cym = np.zeros((self.Y, self.M))
-
+        # map for sentiment values
         self.senti_map = [1,-1]
 
 
@@ -194,7 +156,57 @@ class GibbsSampler:
                     self.Numa[r,z] +=1
     
                     self.topics[(r, i)] = (y, z, s)
-            #print(list((review_matrix[self.n_reviews-1, :])))
+    
+    def assignment(self, x):
+    
+        global alpha_vu
+        global v_u
+        
+        global alpha_bu
+        global b_u
+        
+        global alpha_tu
+        global theta_u
+        
+        global v_m
+        global b_m
+        global theta_m
+        
+        global M_a
+        global b_o
+        
+        prev_min = 0; prev_max = self.U*K
+        alpha_vu = x[prev_min:prev_max].reshape((self.U,K), order='F')
+        
+        prev_min = prev_max; prev_max += self.U*K 
+        v_u = x[prev_min:prev_max].reshape((self.U,K), order='F')
+    
+        prev_min = prev_max; prev_max += self.U
+        alpha_bu = x[prev_min:prev_max].reshape((self.U,1), order='F')
+        
+        prev_min = prev_max; prev_max += self.U
+        b_u = x[prev_min:prev_max].reshape((self.U,1), order='F')
+        
+        prev_min = prev_max; prev_max += self.U*A
+        alpha_tu = x[prev_min:prev_max].reshape((self.U,A), order='F')
+        
+        prev_min = prev_max; prev_max += self.U*A
+        theta_u = x[prev_min:prev_max].reshape((self.U,A), order='F')
+        
+        prev_min = prev_max; prev_max += self.M*K
+        v_m = x[prev_min:prev_max].reshape((self.M,K), order='F')
+        
+        prev_min = prev_max; prev_max += self.M*1
+        b_m = x[prev_min:prev_max].reshape((self.M,1), order='F')
+        
+        prev_min = prev_max; prev_max += self.M*A
+        theta_m = x[prev_min:prev_max].reshape((self.M,A), order='F')
+        
+        prev_min = prev_max; prev_max += A*K
+        M_a = x[prev_min:prev_max].reshape((A,K), order='F')
+        
+        b_o = x[-1]
+
 
     def _conditional_distribution(self, u, w, m, t, t_mean_u):
         """
@@ -246,18 +258,12 @@ class GibbsSampler:
         Perform sampling max_iter times
         """
         
-        assignment(params)
+        self.assignment(params)
 
-        #print("hello 3 GIBBS_BIATCH", M_a)
         for it in range(max_iter):
-            print("iter-> ", it)
             print('Gibbs Sampling Iteration: %d' % it)
-            for movie in range(self.M):
-                
-                if(movie%1000 == 0):
-                    print(movie)
-                
-                
+            
+            for movie in range(self.M):    
                 for (rev,r) in movie_reviews[movie]:
                     for i, word in enumerate(rev.strip().split()):
                         w = word_dictionary[word]
@@ -267,7 +273,6 @@ class GibbsSampler:
                         self.cy[y] -= 1 # specific to y
                         self.c -= 1     # sum over all y
                         self.cyw[y,w] -= 1
-                        # self.cy[y] -= 1   # Note: Wrong should not be reduced again
                         self.cysw[y,s,w] -= 1
                         self.cys[y,s] -= 1
                         self.cyzw[y,z,w] -= 1
@@ -278,7 +283,7 @@ class GibbsSampler:
     
                         # Get next distribution
                         
-                        u = rating_list[r]['u'] #np.random.randint(1000)
+                        u = rating_list[r]['u']
                         t = rating_list[r]['t']
                         self.Nums[r,s] -=1
                         self.Numas[r,z,s] -=1
@@ -305,6 +310,5 @@ class GibbsSampler:
                         self.Numa[r,z] +=1
                         
                         self.topics[(r, i)] = (y, z, s)
-            #print(self.Nums[1], self.Numas[1], self.Numa[1])
             return (self.Nums, self.Numas, self.Numa)
         

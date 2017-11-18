@@ -1,11 +1,8 @@
 import logging
 from constants import *
+from sampler import GibbsSampler
 from optimize import optimizer
-from sampler import GibbsSampler, predicted_rating
 import numpy as np
-import scipy as sp
-from scipy.optimize import fmin_l_bfgs_b
-from numpy import linalg as LA
 import numpy.matlib
 from indexer import Indexer
 
@@ -20,9 +17,29 @@ def main():
     # Download data for NLTK if not already done
     #nltk.download('all')
 
-    ## Initialize
+    # Read 
+    imdb = Indexer()
+    imdb_file = 'data/clothing_data_small.json'
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+    logging.info('Reading file %s' % imdb_file)
+    imdb.read_file(imdb_file)
+    logging.info('File %s read' % imdb_file)
+    
+    (vocab_size, 
+        user_list,  # remove
+        movie_list, 
+        review_matrix, 
+        review_map, 
+        user_dict, 
+        movie_dict, 
+        rating_list, 
+        t_mean, 
+        movie_reviews, 
+        word_dictionary,
+        U, M, R) = imdb.get_mappings()
+    
 
-    #dev_t
+    ## Initialize
     alpha_vu = np.random.normal(0,sigma_u,(U, K))
     alpha_bu = np.random.normal(0,sigma_u,(U, 1))
     alpha_tu = np.random.normal(0,sigma_u,(U, A))
@@ -55,28 +72,6 @@ def main():
                                     theta_m.flatten('F'), 
                                     M_a.flatten('F'), 
                                     np.array([b_o]).flatten('F')))
-
-    # Read 
-    imdb = Indexer()
-    imdb_file = 'data/clothing_data_small.json'
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-    logging.info('Reading file %s' % imdb_file)
-    imdb.read_file(imdb_file)
-    logging.info('File %s read' % imdb_file)
-    
-    (vocab_size, 
-        user_list,  # remove
-        movie_list, 
-        review_matrix, 
-        review_map, 
-        user_dict, 
-        movie_dict, 
-        rating_list, 
-        t_mean, 
-        movie_reviews, 
-        word_dictionary) = imdb.get_mappings()
-    
-
     # Get number of users and movies
     Users = len(user_list)
     Movies = len(movie_list)
@@ -91,7 +86,8 @@ def main():
                                     movie_dict,
                                     user_dict,
                                     movie_reviews,
-                                    word_dictionary)
+                                    word_dictionary
+                                    ,U, M, R)
 
 
     # Run Gibbs EM
@@ -108,13 +104,12 @@ def main():
                                             word_dictionary, 
                                             t_mean, 
                                             params)
-        # Nums = np.zeros((R,2))
-        # Numas = np.zeros((R,A,2))
-        # Numa = np.zeros((R,A))
+#        Nums = np.zeros((R,2))
+#        Numas = np.zeros((R,A,2))
+#        Numa = np.zeros((R,A))
         print('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
-            params, f, d = optimizer(Nums,Numas,Numa,rating_list,t_mean, params)
-#            print ('Final loss after: ', i, ' is ', f)
+            params = optimizer(Nums,Numas,Numa,rating_list,t_mean,params,U,M,R)
     
 if __name__ == "__main__":
     main()

@@ -30,12 +30,6 @@ S = 2
 sigma_ua = 0.1
 sigma_ma = 1.0
 
-# Number of users and movies
-U = 468 #4079
-M = 467 #4670
-R = 1875
-
 beta=0.0001
 epsilon = 5
-counter = 1
 
