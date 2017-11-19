@@ -71,11 +71,13 @@ def calculate_rmse(x,U,M,t_mean,rating_list):
         b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
         r_hat =  np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m[m].T) + b_o + b_ut + b_m[m]
         RMSE += (r - r_hat)**2
+        if(i%100 == 0):
+            print('prediction', r, r_hat)
         
     return math.sqrt(RMSE/len(rating_list))
 
 
-def func(params, *args):
+def func(params, args):
     """
     Computes the value of the objective function required for gradient descent
     """
@@ -129,7 +131,7 @@ def func(params, *args):
     return total_loss
 
 
-def fprime(params, *args):
+def fprime(params, args):
 
     Nums = args[0]
     Numas = args[1]
@@ -184,17 +186,17 @@ def fprime(params, *args):
         
         ########## For term A
 
-        gradA_vu = np.multiply(np.dot(theta_uma[i], M_a), v_m[m].T)
+        gradA_vu = np.multiply(M_sum[i], v_m[m].T)
         gradA_alpha_vu = gradA_vu*dev_t(t, t_mean[u])
         
         gradA_bu = 1
         gradA_alpha_bu = dev_t(t, t_mean[u])
 
-        gradA_theta = np.multiply( np.dot( np.multiply(v_ut, M_a), v_m[m]), (theta_uma[i] * (1 - theta_uma[i]))) 
+        gradA_theta = np.multiply( np.dot( np.multiply(v_ut, M_a), v_m[m]), (theta_uma[i] * (1 - theta_uma[i]))) #revisit
         gradA_thetau = gradA_theta
         gradA_alpha_thetau = gradA_thetau*dev_t(t, t_mean[u])
 
-        gradA_vm = np.multiply(v_ut, np.dot(theta_uma[i], M_a))
+        gradA_vm = np.multiply(v_ut, M_sum[i])
         gradA_b_m = 1        
         gradA_theta_m = gradA_theta
 
@@ -216,11 +218,10 @@ def fprime(params, *args):
         gradC_bo = 0
 
         for j in range(A):
-            ruma = np.dot(np.dot(v_ut, np.diag(M_a[j])), v_m[m].T) + b_o + b_ut + b_m[m]
+            ruma = np.dot(np.multiply(v_ut, M_a[j]), v_m[m].T) + b_o + b_ut + b_m[m]
             gradC_factor = (Numas[i,j,0]/(1 + np.exp(c*ruma - b)))*1*c + (Numas[i,j,1]/(1 + np.exp(-1*(c*ruma - b))))*(-1)*c
 
             gradC_vu += gradC_factor*np.multiply(M_a[j], v_m[m])
-            gradC_alpha_vu += gradC_factor*gradC_vu*dev_t(t, t_mean[u])
             
             gradC_bu += gradC_factor
             gradC_alpha_bu += gradC_factor*dev_t(t, t_mean[u])
@@ -231,6 +232,8 @@ def fprime(params, *args):
             gradC_M_a[j] = gradC_factor*np.matrix(np.multiply(v_ut, v_m[m]))
             gradC_bo += gradC_factor
 
+        gradC_alpha_vu = gradC_vu*dev_t(t, t_mean[u])
+        
         ########### For term D
         
         softmax_matrix = np.zeros((A,A))
@@ -244,8 +247,8 @@ def fprime(params, *args):
                 else:
                     softmax_matrix[j][k] = -1*theta_uma[i][j]*theta_uma[i][k]
 
-        gradD_thetau = np.dot(numa_by_theta_uma, softmax_matrix)
-        gradD_thetam = np.dot(numa_by_theta_uma, softmax_matrix)
+        gradD_thetau = np.dot(numa_by_theta_uma, softmax_matrix.T)
+        gradD_thetam = np.dot(numa_by_theta_uma, softmax_matrix.T)
         gradD_alpha_thetau = gradD_thetau*dev_t(t, t_mean[u])
 
         ############### Final
@@ -267,7 +270,6 @@ def fprime(params, *args):
         
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
-
     return numpy.concatenate((final_grad_alpha_vu.flatten('F'), 
             final_grad_vu.flatten('F'), 
             final_grad_alpha_bu.flatten('F'), 
@@ -286,7 +288,21 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R):
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
     args = [Nums,Numas,Numa,rating_list,t_mean,U,M,R]
-        
-    params,l,_ = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
-    print ('Loss: ' + str(l) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
+    e = 0.001
+    sav = []
+    grad = fprime(params,args)
+    for i in range(len(params)):
+        new_params = params 
+        new_params[i] += e
+        grad_num = (func(new_params, args) - func(params, args))/e
+        sav.append(abs(grad_num - grad[i]))
+
+    np.save('C:/Users/risha/291/CSE291_Project/grad_diff.npy',sav)
+    print(max(sav))
+#    learning_rate = 0.000015
+#    for i in range(2):
+#        params -= learning_rate*fprime(params,args)
+#        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
+#    params,l,_ = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
+#    print ('Loss: ' + str(l) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
     return params

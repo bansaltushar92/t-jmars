@@ -28,8 +28,7 @@ S = 2
 
 #Aspect Sigma
 sigma_ua = 0.1
-sigma_ma = 1.0
+sigma_ma = 0.1
 
 beta=0.0001
 epsilon = 5
-

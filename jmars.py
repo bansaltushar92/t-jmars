@@ -7,8 +7,8 @@ import numpy.matlib
 from indexer import Indexer
 
 # Constants
-MAX_ITER = 20
-MAX_OPT_ITER = 10
+MAX_ITER = 1
+MAX_OPT_ITER = 1
 
 def main():
     """
@@ -40,26 +40,26 @@ def main():
     
 
     ## Initialize
-    alpha_vu = np.random.normal(0,sigma_u,(U, K))
-    alpha_bu = np.random.normal(0,sigma_u,(U, 1))
-    alpha_tu = np.random.normal(0,sigma_u,(U, A))
+    alpha_vu = np.random.normal(0,sigma_u,(U, K)) * 0.1
+    alpha_bu = np.random.normal(0,sigma_u,(U, 1)) * 0.1
+    alpha_tu = np.random.normal(0,sigma_u,(U, A)) * 0.1
     
     
     # User
-    v_u = np.random.normal(0,sigma_u,(U, K))      # Latent factor vector
-    b_u = np.random.normal(0,sigma_bu,(U, 1))      # Common bias vector
-    theta_u = np.random.normal(0,sigma_ua,(U, A))  # Aspect specific vector
+    v_u = np.random.normal(0,sigma_u,(U, K)) * 0.1      # Latent factor vector
+    b_u = np.random.normal(0,sigma_bu,(U, 1)) * 0.1      # Common bias vector
+    theta_u = np.random.normal(0,sigma_ua,(U, A)) * 0.1  # Aspect specific vector
     
     # Movie
-    v_m = np.random.normal(0,sigma_m,(M, K))      # Latent factor vector
-    b_m = np.random.normal(0,sigma_bm,(M, 1))      # Common bias vector
-    theta_m = np.random.normal(0,sigma_ma,(M, A))  # Aspect specific vector
+    v_m = np.random.normal(0,sigma_m,(M, K)) * 0.1      # Latent factor vector
+    b_m = np.random.normal(0,sigma_bm,(M, 1)) * 0.1      # Common bias vector
+    theta_m = np.random.normal(0,sigma_ma,(M, A)) * 0.1  # Aspect specific vector
     
     # Common bias
-    b_o = np.random.normal(0,sigma_b0) 
+    b_o = np.random.normal(0,sigma_b0)  * 0.1
     
     # Scaling Matrix
-    M_a = np.random.normal(0,sigma_Ma,(A, K))
+    M_a = np.random.normal(0,sigma_Ma,(A, K))  * 0.1
     
     params = numpy.concatenate((alpha_vu.flatten('F'), 
                                     v_u.flatten('F'), 

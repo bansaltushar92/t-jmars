@@ -2,7 +2,6 @@ from constants import *
 import numpy as np
 from scipy.sparse import dok_matrix
 
-
 def dev_t(t, tu_mean):
     # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
     return 0.0
