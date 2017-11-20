@@ -41,6 +41,9 @@ def assign_params(x,U,M,R):
     M_a = x[prev_min:prev_max].reshape((A,K), order='F')
     
     b_o = x[-1]
+    print ("Fuck b_m", b_m[:5])
+    print ("Fuck b_u", b_u[:5])
+    print ("Fuck b_o", b_o)
     
     return (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o)
 
@@ -291,14 +294,16 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R):
     e = 0.001
     sav = []
     grad = fprime(params,args)
-    for i in range(len(params)):
-        new_params = params 
+    for i in range(len(params)-1, len(params)):
+        new_params = np.copy(params) 
         new_params[i] += e
         grad_num = (func(new_params, args) - func(params, args))/e
-        sav.append(abs(grad_num - grad[i]))
+        print (func(new_params, args), func(params, args))
+        print (grad_num, grad[i])
+        # sav.append(abs(grad_num - grad[i]))
 
-    np.save('C:/Users/risha/291/CSE291_Project/grad_diff.npy',sav)
-    print(max(sav))
+    # np.save('grad_diff_2.npy',sav)
+    # print(max(sav))
 #    learning_rate = 0.000015
 #    for i in range(2):
 #        params -= learning_rate*fprime(params,args)
