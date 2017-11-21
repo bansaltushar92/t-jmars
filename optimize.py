@@ -129,7 +129,7 @@ def func(params, args):
     
     loss2 = np.multiply(Nums[:,0], np.log(1/(1 + np.exp(-1*(c*r_hat - b))))) + np.multiply(Nums[:,1], np.log(1/(1 + np.exp((c*r_hat - b)))))    
     loss4 = (np.multiply(Numa, np.log(theta_uma))).sum()
-    total_loss = loss1.sum() - loss2.sum() - loss3.sum() - loss4.sum() 
+    total_loss = loss1.sum() - loss2.sum() - loss3.sum() - loss4.sum()
 
     return total_loss
 
@@ -153,7 +153,7 @@ def fprime(params, args):
         t = rating_list[i]['t']
 
         num_theta_uma[i] = np.exp(theta_u[u] + dev_t(t, t_mean[u])*alpha_tu[u] + theta_m[m])
-    
+
     theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
     M_sum = np.dot(theta_uma, M_a)
 
@@ -291,25 +291,49 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R):
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
     args = [Nums,Numas,Numa,rating_list,t_mean,U,M,R]
-    e = 0.001
-    sav = []
-    grad = fprime(params,args)
-    np.save('C:/Users/risha/291/CSE291_Project/grad_fprime.npy',grad)
-    f_base = func(params, args)
-    for i in range(len(params)):
-        new_params = np.copy(params) 
-        new_params[i] += e
-        grad_num = (func(new_params, args) - f_base)/e
-        if i%1000 == 0:
-            print(i)
-        sav.append(abs(grad_num - grad[i]))
+    # e = 0.001
+    # sav = []
+    # grad = fprime(params,args)
+    # np.save('mini_grad_fprime.npy',grad)
+    # f_base = func(params, args)
+    # for i in range(len(params)):
+    #     new_params = np.copy(params) 
+    #     new_params[i] += e
+    #     grad_num = (func(new_params, args) - f_base)/e
+    #     if i%1000 == 0:
+    #         print(i)
+    #     sav.append(abs(grad_num - grad[i]))
 
-    np.save('C:/Users/risha/291/CSE291_Project/grad_diff_2.npy',sav)
+    # np.save('mini_grad_diff.npy',sav)
     # print(max(sav))
-#    learning_rate = 0.000015
-#    for i in range(2):
-#        params -= learning_rate*fprime(params,args)
-#        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
-#    params,l,_ = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
-#    print ('Loss: ' + str(l) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
+    learning_rate = 0.1
+    # for i in range(2):
+       # params -= learning_rate*fprime(params,args)
+       # print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
+   # params,l,_ = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
+   # print ('Loss: ' + str(l) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
+
+# RMSprop  
+    gamma = 0.9
+    eps = 0.00000001
+    cache = np.zeros_like(params)
+    for i in range(2):
+        grad = fprime(params,args)
+        cache = gamma*cache + (1-gamma)*(grad**2)
+        params -= learning_rate * grad / (np.sqrt(cache + eps))
+    print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     return params

@@ -7,8 +7,8 @@ import numpy.matlib
 from indexer import Indexer
 
 # Constants
-MAX_ITER = 1
-MAX_OPT_ITER = 1
+MAX_ITER = 50
+MAX_OPT_ITER = 3
 
 def main():
     """
@@ -104,9 +104,9 @@ def main():
                                             word_dictionary, 
                                             t_mean, 
                                             params)
-#        Nums = np.zeros((R,2))
-#        Numas = np.zeros((R,A,2))
-#        Numa = np.zeros((R,A))
+        # Nums = np.zeros((R,2))
+        # Numas = np.zeros((R,A,2))
+        # Numa = np.zeros((R,A))
         print('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
             params = optimizer(Nums,Numas,Numa,rating_list,t_mean,params,U,M,R)
