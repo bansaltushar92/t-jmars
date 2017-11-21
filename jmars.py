@@ -8,7 +8,7 @@ from indexer import Indexer
 
 # Constants
 MAX_ITER = 50
-MAX_OPT_ITER = 3
+MAX_OPT_ITER = 1
 
 def main():
     """

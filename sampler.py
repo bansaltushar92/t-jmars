@@ -3,8 +3,8 @@ import numpy as np
 from scipy.sparse import dok_matrix
 
 def dev_t(t, tu_mean):
-    # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
-    return 0.0
+    return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
+    # return 0.0
 
 # Joint aspect distribution
 def joint_aspect(u, m, t, t_mean_u):
@@ -150,9 +150,12 @@ class GibbsSampler:
                     self.cmyw[movie][y,w] += 1
                     self.cym[y, movie] += 1
     
-                    self.Nums[r,s] +=1
-                    self.Numas[r,z,s] +=1
-                    self.Numa[r,z] +=1
+                    if y == 1:
+                        self.Nums[r,s] +=1
+                    if y == 2:
+                        self.Numas[r,z,s] +=1
+                    if y == 3:
+                        self.Numa[r,z] +=1
     
                     self.topics[(r, i)] = (y, z, s)
     
@@ -284,9 +287,13 @@ class GibbsSampler:
                         
                         u = rating_list[r]['u']
                         t = rating_list[r]['t']
-                        self.Nums[r,s] -=1
-                        self.Numas[r,z,s] -=1
-                        self.Numa[r,z] -=1
+
+                        if y == 1:
+                            self.Nums[r,s] -=1
+                        if y == 2:
+                            self.Numas[r,z,s] -=1
+                        if y == 3:
+                            self.Numa[r,z] -=1
                         
                         p_z = self._conditional_distribution(u, w, movie, t, t_mean[u]) # Eq. 13 for all values of y,z,s -> computing tensor
                         (y, z, s) = sample_multiple_indices(p_z)
@@ -304,10 +311,14 @@ class GibbsSampler:
                         self.cmyw[movie][y,w] += 1
                         self.cym[y, movie] += 1
                         
-                        self.Nums[r,s] +=1
-                        self.Numas[r,z,s] +=1
-                        self.Numa[r,z] +=1
+                        if y == 1:
+                            self.Nums[r,s] +=1
+                        if y == 2:
+                            self.Numas[r,z,s] +=1
+                        if y == 3:
+                            self.Numa[r,z] +=1
                         
                         self.topics[(r, i)] = (y, z, s)
+            print (self.Nums[:10,0], self.Numas[:10,0,0], self.Numa[:10,0])
             return (self.Nums, self.Numas, self.Numa)
         
