@@ -90,7 +90,7 @@ class GibbsSampler:
     Class to handle Gibbs Sampling
     """
     def __init__(self, vocab_size, review_matrix, rating_list, movie_dict, user_dict, movie_reviews, word_dictionary,
-                 U, M, R):
+                 U, M, R, test_indices):
         """
         Constructor
         """
@@ -134,6 +134,8 @@ class GibbsSampler:
 
         for movie in range(self.M):
             for (rev,r) in movie_reviews[movie]:
+                if r in test_indices:
+                    continue
                 for i, word in enumerate(rev.strip().split()):
                     w = word_dictionary[word]
                     # Choose a random assignment of y, z, w
@@ -255,7 +257,7 @@ class GibbsSampler:
         return p_z
 
 
-    def run(self, vocab_size, review_matrix, rating_list, user_dict, movie_dict, movie_reviews, word_dictionary,t_mean, params, max_iter=1):
+    def run(self, vocab_size, review_matrix, rating_list, user_dict, movie_dict, movie_reviews, word_dictionary,t_mean, params, test_indices, max_iter=1):
         """
         Perform sampling max_iter times
         """
@@ -267,6 +269,8 @@ class GibbsSampler:
             
             for movie in range(self.M):    
                 for (rev,r) in movie_reviews[movie]:
+                    if r in test_indices:
+                        continue
                     for i, word in enumerate(rev.strip().split()):
                         w = word_dictionary[word]
                         (y, z, s) = self.topics[(r, i)]

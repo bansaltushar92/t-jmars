@@ -4,6 +4,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import numpy as np
 from collections import defaultdict
+import random
 
 def clean_review(review):
     """
@@ -91,6 +92,11 @@ class Indexer:
         
         review_map = list()
         movie_reviews = [[] for o in range(len(movie_dict))]
+        
+        indices = [i for i in range(len(self.reviews))]
+        random.shuffle(indices)
+        test_indices = {idx:1 for idx in indices[int(0.8*len(indices)):]}
+        
         for index in range(len(self.reviews)):
             
             review_map.append(
@@ -115,4 +121,4 @@ class Indexer:
         review_matrix = np.array(review_matrix)
          
         print(len(movie_dict))
-        return (vocab_size, user_list, movie_list, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary,nu,nm,len(self.reviews))
+        return (vocab_size, user_list, movie_list, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary,nu,nm,len(self.reviews), test_indices)

@@ -41,14 +41,11 @@ def assign_params(x,U,M,R):
     M_a = x[prev_min:prev_max].reshape((A,K), order='F')
     
     b_o = x[-1]
-    #print ("Fuck b_m", b_m[:5])
-    #print ("Fuck b_u", b_u[:5])
-    #print ("Fuck b_o", b_o)
     
     return (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o)
 
 
-def calculate_rmse(x,U,M,t_mean,rating_list):
+def calculate_rmse(x,U,M,t_mean,rating_list,test_indices):
     
     (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o) = assign_params(x,U,M,len(rating_list))
     
@@ -63,7 +60,8 @@ def calculate_rmse(x,U,M,t_mean,rating_list):
     theta_uma = np.divide(num_theta_uma.T,num_theta_uma.sum(axis=1)).T
 
     M_sum = np.dot(theta_uma, M_a)
-    RMSE = 0
+    RMSE_train = 0
+    RMSE_test = 0
     for i in range(len(rating_list)):
         m = rating_list[i]['m']
         u = rating_list[i]['u']
@@ -73,11 +71,13 @@ def calculate_rmse(x,U,M,t_mean,rating_list):
         v_ut = v_u[u] + dev_t(t, t_mean[u])*alpha_vu[u]
         b_ut = b_u[u] + dev_t(t, t_mean[u])*alpha_bu[u]
         r_hat =  np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m[m].T) + b_o + b_ut + b_m[m]
-        RMSE += (r - r_hat)**2
-        #if(i%100 == 0):
-        #    print('prediction', r, r_hat)
+        if i not in test_indices:
+            RMSE_train += (r - r_hat)**2
+        else:
+            RMSE_test += (r - r_hat)**2
         
-    return math.sqrt(RMSE/len(rating_list))
+    return (math.sqrt(RMSE_train/(len(rating_list) - len(test_indices))),
+            math.sqrt(RMSE_test/(len(test_indices))))
 
 
 def func(params, args):
@@ -91,13 +91,15 @@ def func(params, args):
     rating_list = args[3]
     t_mean = args[4]
     U = args[5]; M = args[6]; R = args[7]
+    test_indices = args[8]
     
     (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o) = assign_params(params,U,M,R)
 
     r_hat = np.zeros(R)
     num_theta_uma = np.zeros((len(rating_list), A)) 
 
-    for i in range(len(rating_list)): 
+    for i in range(len(rating_list)):
+        
         m = rating_list[i]['m']
         u = rating_list[i]['u']
         t = rating_list[i]['t']
@@ -112,6 +114,9 @@ def func(params, args):
     loss3 = 0
 
     for i in range(len(rating_list)):
+        if i in test_indices:
+            continue
+        
         m = rating_list[i]['m']
         u = rating_list[i]['u']
         t = rating_list[i]['t']
@@ -142,6 +147,7 @@ def fprime(params, args):
     rating_list = args[3]
     t_mean = args[4]
     U = args[5]; M = args[6]; R = args[7]
+    test_indices = args[8]
     
     (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o) = assign_params(params,U,M,R)
 
@@ -177,6 +183,8 @@ def fprime(params, args):
 
 
     for i in range(len(rating_list)):
+        if i in test_indices:
+            continue
         m = rating_list[i]['m']
         u = rating_list[i]['u']
         t = rating_list[i]['t'] 
@@ -286,11 +294,11 @@ def fprime(params, args):
             np.array([final_grad_bo]).flatten('F')))
 
 
-def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R):
+def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices):
     """
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
-    args = [Nums,Numas,Numa,rating_list,t_mean,U,M,R]
+    args = [Nums,Numas,Numa,rating_list,t_mean,U,M,R,test_indices]
     # e = 0.001
     # sav = []
     # grad = fprime(params,args)
@@ -321,19 +329,6 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R):
         grad = fprime(params,args)
         cache = gamma*cache + (1-gamma)*(grad**2)
         params -= learning_rate * grad / (np.sqrt(cache + eps))
-        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
-
-
-
-
-
-
-
-
-
-
-
-
-
+        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list,test_indices)))
 
     return params

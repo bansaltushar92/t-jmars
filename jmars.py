@@ -36,7 +36,7 @@ def main():
         t_mean, 
         movie_reviews, 
         word_dictionary,
-        U, M, R) = imdb.get_mappings()
+        U, M, R, test_indices) = imdb.get_mappings()
     
 
     ## Initialize
@@ -87,7 +87,7 @@ def main():
                                     user_dict,
                                     movie_reviews,
                                     word_dictionary
-                                    ,U, M, R)
+                                    ,U, M, R, test_indices)
 
 
     # Run Gibbs EM
@@ -103,13 +103,14 @@ def main():
                                             movie_reviews, 
                                             word_dictionary, 
                                             t_mean, 
-                                            params)
+                                            params, test_indices)
         # Nums = np.zeros((R,2))
         # Numas = np.zeros((R,A,2))
         # Numa = np.zeros((R,A))
         print('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
-            params = optimizer(Nums,Numas,Numa,rating_list,t_mean,params,U,M,R)
+            params = optimizer(Nums,Numas,Numa,rating_list,t_mean,params,U,M,R,test_indices)
+            np.save('C:/Users/risha/291/CSE291_Project/params.npy',params)
     
 if __name__ == "__main__":
     main()
