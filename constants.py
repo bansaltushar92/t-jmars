@@ -15,10 +15,10 @@ c = 1
 b = 1
 
 # Number of aspects
-A = 3
+A = 6
 
 # Number of latent factors
-K = 2
+K = 5
 
 # Language Models
 Y = 5

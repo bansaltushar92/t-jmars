@@ -3,8 +3,8 @@ import numpy as np
 from scipy.sparse import dok_matrix
 
 def dev_t(t, tu_mean):
-    return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
-    # return 0.0
+    # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
+    return 0.0
 
 # Joint aspect distribution
 def joint_aspect(u, m, t, t_mean_u):
@@ -324,5 +324,12 @@ class GibbsSampler:
                         
                         self.topics[(r, i)] = (y, z, s)
             print (self.Nums[:10,0], self.Numas[:10,0,0], self.Numa[:10,0])
+            np.save('cyw.npy', self.cyw)
+            np.save('cmyw.npy', self.cmyw)
+            np.save('cyzw.npy', self.cyzw)
+            np.save('cysw.npy', self.cysw)
+            np.save('Nums.npy', self.Nums)
+            np.save('Numas.npy', self.Numas)
+            np.save('Numa.npy', self.Numa)
             return (self.Nums, self.Numas, self.Numa)
         

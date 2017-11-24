@@ -6,8 +6,8 @@ import numpy.matlib
 
 
 def dev_t(t, tu_mean):
-    return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
-    # return 0.0
+    # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
+    return 0.0
 
 def assign_params(x,U,M,R):
     prev_min = 0; prev_max = U*K
