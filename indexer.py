@@ -5,19 +5,19 @@ from nltk.corpus import stopwords
 import numpy as np
 from collections import defaultdict
 import random
+import string
+from nltk.stem.porter import PorterStemmer
 
 def clean_review(review):
     """
     Removes punctuations, stopwords and returns an array of words
     """
-    review = review.replace('!', ' ')
-    review = review.replace('?', ' ')
-    review = review.replace(':', ' ')
-    review = review.replace(';', ' ')
-    review = review.replace(',', ' ')
+    review = review.replace('&#34', '')
+    p_stemmer = PorterStemmer()
+    review = ''.join([c.lower() for c in review if c not in set(string.punctuation)])
     tokens = word_tokenize(review)
-    tokens = [w for w in tokens if w not in stopwords.words('english')]
-    return tokens
+    tokens = [p_stemmer.stem(w) for w in tokens if w not in stopwords.words('english')]
+    return ' '.join(tokens)
 
 class Indexer:
     """
@@ -36,6 +36,7 @@ class Indexer:
         f = open(filename)
         data = f.read()
         self.reviews = json.loads(data)
+            
 
     def get_mappings(self):
         """
@@ -98,17 +99,16 @@ class Indexer:
         test_indices = {idx:1 for idx in indices[int(0.8*len(indices)):]}
         
         for index in range(len(self.reviews)):
-            
+            temp = clean_review(self.reviews[index]['reviewText'])
             review_map.append(
             {
                 'user' : self.reviews[index]['reviewerID'],  #['user'],
                 'movie' : self.reviews[index]['asin']  #['movie']
             })
             
-            movie_reviews[movie_dict[self.reviews[index]['asin']]].append((self.reviews[index]['reviewText'], index))
+            movie_reviews[movie_dict[self.reviews[index]['asin']]].append((temp, index))
             
             rating_list.append({'u': user_dict[self.reviews[index]['reviewerID']], 'm': movie_dict[self.reviews[index]['asin']], 't': self.reviews[index]['unixReviewTime'], 'r':self.reviews[index]['overall']})
-            temp = self.reviews[index]['reviewText']
             arr = temp.split()
             review_matrix.append(arr)
             for ar in arr:
@@ -120,5 +120,6 @@ class Indexer:
         vocab_size = len(word_dictionary.keys())
         review_matrix = np.array(review_matrix)
          
-        print(len(movie_dict))
+        print(len(self.reviews))
+        np.save('./clean_review/word_dictionary.npy', [(k,word_dictionary[k]) for k in word_dictionary])
         return (vocab_size, user_list, movie_list, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary,nu,nm,len(self.reviews), test_indices)

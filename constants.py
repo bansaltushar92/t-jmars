@@ -30,5 +30,5 @@ S = 2
 sigma_ua = 0.1
 sigma_ma = 0.1
 
-beta=0.0001
+beta=0.00001
 epsilon = 5

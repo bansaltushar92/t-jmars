@@ -6,8 +6,8 @@ import numpy.matlib
 
 
 def dev_t(t, tu_mean):
-    # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
-    return 0.0
+    return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
+    #return 0.0
 
 def assign_params(x,U,M,R):
     prev_min = 0; prev_max = U*K
@@ -325,7 +325,7 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices):
     gamma = 0.9
     eps = 0.00000001
     cache = np.zeros_like(params)
-    for i in range(6):
+    for i in range(10):
         grad = fprime(params,args)
         cache = gamma*cache + (1-gamma)*(grad**2)
         params -= learning_rate * grad / (np.sqrt(cache + eps))

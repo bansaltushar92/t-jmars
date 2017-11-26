@@ -19,7 +19,7 @@ def main():
 
     # Read 
     imdb = Indexer()
-    imdb_file = 'data/clothing_data.json'
+    imdb_file = 'data/clothing_data_small.json'
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     logging.info('Reading file %s' % imdb_file)
     imdb.read_file(imdb_file)
@@ -110,7 +110,7 @@ def main():
         print('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
             params = optimizer(Nums,Numas,Numa,rating_list,t_mean,params,U,M,R,test_indices)
-            np.save('params.npy',params)
+            np.save('./clean_review/params.npy',params)
     
 if __name__ == "__main__":
     main()
