@@ -3,8 +3,8 @@ import numpy as np
 from scipy.sparse import dok_matrix
 
 def dev_t(t, tu_mean):
-    # return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
-    return 0.0
+    return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
+    # return 0.0
 
 # Joint aspect distribution
 def joint_aspect(u, m, t, t_mean_u):

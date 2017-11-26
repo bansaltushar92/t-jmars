@@ -15,11 +15,11 @@ def main():
     Main function
     """
     # Download data for NLTK if not already done
-    #nltk.download('all')
+    # nltk.download('all')
 
     # Read 
     imdb = Indexer()
-    imdb_file = 'data/clothing_data_small.json'
+    imdb_file = 'data/clothing_data.json'
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     logging.info('Reading file %s' % imdb_file)
     imdb.read_file(imdb_file)
