@@ -7,7 +7,7 @@ import numpy.matlib
 
 def dev_t(t, tu_mean):
     return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
-    #return 0.0
+    # return 0.0
 
 def assign_params(x,U,M,R):
     prev_min = 0; prev_max = U*K
@@ -136,7 +136,7 @@ def func(params, args):
     loss4 = (np.multiply(Numa, np.log(theta_uma))).sum()
     total_loss = loss1.sum() - loss2.sum() - loss3.sum() - loss4.sum()
 
-    return total_loss + 0.1*np.linalg.norm(params, ord=1)
+    return total_loss + 0.0*np.linalg.norm(params, ord=1)
 
 
 def fprime(params, args):
@@ -281,17 +281,17 @@ def fprime(params, args):
         
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
-    return numpy.concatenate(((final_grad_alpha_vu + 0.1*np.sign(alpha_vu)).flatten('F'), 
-            (final_grad_vu + 0.1*np.sign(v_u)).flatten('F'), 
-            (final_grad_alpha_bu + 0.1*np.sign(alpha_bu)).flatten('F'), 
-            (final_grad_bu + 0.1*np.sign(b_u)).flatten('F'), 
-            (final_grad_alpha_thetau + 0.1*np.sign(alpha_tu)).flatten('F'), 
-            (final_grad_thetau + 0.1*np.sign(theta_u)).flatten('F'), 
-            (final_grad_vm + 0.1*np.sign(v_m)).flatten('F'), 
-            (final_grad_b_m  + 0.1*np.sign(b_m)).flatten('F'), 
-            (final_grad_theta_m + 0.1*np.sign(theta_m)).flatten('F'), 
-            (final_grad_M_a + 0.1*np.sign(M_a)).flatten('F'),
-            (np.array([final_grad_bo]) + 0.1*np.sign(np.array([b_o]))).flatten('F')))
+    return numpy.concatenate(((final_grad_alpha_vu + 0.0*np.sign(alpha_vu)).flatten('F'), 
+            (final_grad_vu + 0.0*np.sign(v_u)).flatten('F'), 
+            (final_grad_alpha_bu + 0.0*np.sign(alpha_bu)).flatten('F'), 
+            (final_grad_bu + 0.0*np.sign(b_u)).flatten('F'), 
+            (final_grad_alpha_thetau + 0.0*np.sign(alpha_tu)).flatten('F'), 
+            (final_grad_thetau + 0.0*np.sign(theta_u)).flatten('F'), 
+            (final_grad_vm + 0.0*np.sign(v_m)).flatten('F'), 
+            (final_grad_b_m  + 0.0*np.sign(b_m)).flatten('F'), 
+            (final_grad_theta_m + 0.0*np.sign(theta_m)).flatten('F'), 
+            (final_grad_M_a + 0.0*np.sign(M_a)).flatten('F'),
+            (np.array([final_grad_bo]) + 0.0*np.sign(np.array([b_o]))).flatten('F')))
 
 
 def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices):

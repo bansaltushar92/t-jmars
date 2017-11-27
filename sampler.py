@@ -27,7 +27,7 @@ def predicted_rating(u, m, t, t_mean_u):
 
     v_ut = v_u[u] + dev_t(t, t_mean_u)*alpha_vu[u]
     b_ut = b_u[u] + dev_t(t, t_mean_u)*alpha_bu[u]
-
+        # np.dot(np.dot(v_ut, np.diag(M_sum[i])), v_m[m].T) + b_o + b_ut + b_m[m]
     r = np.dot(np.dot(v_ut, np.diag(M_sum)), v_m[m].T) + b_o + b_ut + b_m[m]  
     return r
 
@@ -144,7 +144,6 @@ class GibbsSampler:
                     self.cy[y] += 1
                     self.c += 1
                     self.cyw[y,w] += 1
-                    self.cy[y] += 1
                     self.cysw[y,s,w] += 1
                     self.cys[y,s] += 1
                     self.cyzw[y,z,w] += 1
@@ -218,17 +217,31 @@ class GibbsSampler:
         """
         p_z = np.zeros((self.Y, self.Z, self.S))
         # y = 0
-        for z in range(self.Z):
-            for s in range(self.S):
-                p_z[0,z,s] = (self.cy[0] + gamma) / (self.c + 5 * gamma)
-                p_z[0,z,s] = (p_z[0,z,s] * (self.cyw[0,w] + eta)) / (self.cy[0] + eta)
+        # for z in range(self.Z):
+            # for s in range(self.S):
+                # p_z[0,z,s] = (self.cy[0] + gamma) / (self.c + 5 * gamma)
+                # p_z[0,z,s] = (p_z[0,z,s] * (self.cyw[0,w] + eta)) / (self.cy[0] + eta)
+
+        p_z[0,0,0] = (self.cy[0] + gamma) / (self.c + 5 * gamma)
+        p_z[0,0,0] = (p_z[0,0,0] * (self.cyw[0,w] + eta)) / (self.cy[0] + eta)
+
 
         # y = 1
-        for z in range(self.Z):
-            for s in range(self.S):
-                p_z[1,z,s] = (self.cy[1] + gamma) / (self.c + 5 * gamma)
-                p_z[1,z,s] = (p_z[1,z,s] * (self.cysw[1,s,w] + eta)) / (self.cys[1,s] + eta)
-                p_z[1,z,s] = p_z[1,z,s] * aggregate_sentiment_probability(self.senti_map[s],u,m,t, t_mean_u)
+        # for z in range(self.Z):
+            # for s in range(self.S):
+                # p_z[1,z,s] = (self.cy[1] + gamma) / (self.c + 5 * gamma)
+                # p_z[1,z,s] = (p_z[1,z,s] * (self.cysw[1,s,w] + eta)) / (self.cys[1,s] + eta)
+                # p_z[1,z,s] = p_z[1,z,s] * aggregate_sentiment_probability(self.senti_map[s],u,m,t, t_mean_u)
+
+        for s in range(self.S):
+            p_z[1,0,s] = (self.cy[1] + gamma) / (self.c + 5 * gamma)
+            p_z[1,0,s] = (p_z[1,0,s] * (self.cysw[1,s,w] + eta)) / (self.cys[1,s] + eta)
+            p_z[1,0,s] = p_z[1,0,s] * aggregate_sentiment_probability(self.senti_map[s],u,m,t, t_mean_u)
+
+
+
+        if w == 16 and u == 0 and m == 0:
+                print ('agg_prob_fin', aggregate_sentiment_probability(self.senti_map[0],u,m,t,t_mean_u))
 
         # y = 2
         for z in range(self.Z):
@@ -238,21 +251,40 @@ class GibbsSampler:
                 p_z[2,z,s] = p_z[2,z,s] * (joint_aspect(u, m,t, t_mean_u)[z])
                 p_z[2,z,s] = p_z[2,z,s] * aspect_sentiment_probability(self.senti_map[s],u,m,z,t, t_mean_u)
 
+                # if w == 16:
+                    # print ('aspect_prob', aspect_sentiment_probability(self.senti_map[s],u,m,z,t, t_mean_u))
+
+
+        if w == 16 and u == 0 and m == 0:
+            print ('aspect_prob_fin', aspect_sentiment_probability(self.senti_map[0],u,m,0,t, t_mean_u))
+
         # y = 3
+        # for z in range(self.Z):
+        #     for s in range(self.S):
+        #         p_z[3,z,s] = (self.cy[3] + gamma) / (self.c + 5 * gamma)
+        #         p_z[3,z,s] = (p_z[3,z,s] * (self.cyzw[3,z,w] + eta)) / (self.cyz[3,z] + eta)
+        #         p_z[3,z,s] = p_z[3,z,s] * (joint_aspect(u,m,t, t_mean_u)[z])
+
         for z in range(self.Z):
-            for s in range(self.S):
-                p_z[3,z,s] = (self.cy[3] + gamma) / (self.c + 5 * gamma)
-                p_z[3,z,s] = (p_z[3,z,s] * (self.cyzw[3,z,w] + eta)) / (self.cyz[3,z] + eta)
-                p_z[3,z,s] = p_z[3,z,s] * (joint_aspect(u,m,t, t_mean_u)[z])
+            p_z[3,z,0] = (self.cy[3] + gamma) / (self.c + 5 * gamma)
+            p_z[3,z,0] = (p_z[3,z,0] * (self.cyzw[3,z,w] + eta)) / (self.cyz[3,z] + eta)
+            p_z[3,z,0] = p_z[3,z,0] * (joint_aspect(u,m,t, t_mean_u)[z])
 
         # y = 4
-        for z in range(self.Z):
-            for s in range(self.S):
-                p_z[4,z,s] = (self.cy[4] + gamma) / (self.c + 5 * gamma)
-                p_z[4,z,s] = (p_z[4,z,s] * (self.cmyw[m][4,w] + eta)) / (self.cym[4,m] + eta)
+        # for z in range(self.Z):
+            # for s in range(self.S):
+                # p_z[4,z,s] = (self.cy[4] + gamma) / (self.c + 5 * gamma)
+                # p_z[4,z,s] = (p_z[4,z,s] * (self.cmyw[m][4,w] + eta)) / (self.cym[4,m] + eta)
+
+        p_z[4,0,0] = (self.cy[4] + gamma) / (self.c + 5 * gamma)
+        p_z[4,0,0] = (p_z[4,0,0] * (self.cmyw[m][4,w] + eta)) / (self.cym[4,m] + eta)
+
 
         # Normalize
         p_z = p_z / p_z.sum()
+
+        if w == 16 and u == 0 and m == 0:
+            print ('pz', p_z, u, m, type(u), type(m))
 
         return p_z
 
@@ -306,7 +338,6 @@ class GibbsSampler:
                         self.cy[y] += 1
                         self.c += 1
                         self.cyw[y,w] += 1
-                        self.cy[y] += 1
                         self.cysw[y,s,w] += 1
                         self.cys[y,s] += 1
                         self.cyzw[y,z,w] += 1
@@ -323,6 +354,8 @@ class GibbsSampler:
                             self.Numa[r,z] +=1
                         
                         self.topics[(r, i)] = (y, z, s)
+            
+            print ('fit count', self.cyw[:,16])
             print (self.Nums[:10,0], self.Numas[:10,0,0], self.Numa[:10,0])
             np.save('./clean_review/cyw.npy', self.cyw)
             np.save('./clean_review/cmyw.npy', self.cmyw)
