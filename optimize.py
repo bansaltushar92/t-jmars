@@ -7,7 +7,7 @@ import numpy.matlib
 
 def dev_t(t, tu_mean):
     return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
-    # return 0.0
+#    return 0.0
 
 def assign_params(x,U,M,R):
     prev_min = 0; prev_max = U*K
@@ -92,6 +92,7 @@ def func(params, args):
     t_mean = args[4]
     U = args[5]; M = args[6]; R = args[7]
     test_indices = args[8]
+    lamda = args[9]
     
     (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o) = assign_params(params,U,M,R)
 
@@ -136,7 +137,7 @@ def func(params, args):
     loss4 = (np.multiply(Numa, np.log(theta_uma))).sum()
     total_loss = loss1.sum() - loss2.sum() - loss3.sum() - loss4.sum()
 
-    return total_loss + 0.0*np.linalg.norm(params, ord=1)
+    return total_loss + lamda*np.linalg.norm(params, ord=1)
 
 
 def fprime(params, args):
@@ -148,6 +149,7 @@ def fprime(params, args):
     t_mean = args[4]
     U = args[5]; M = args[6]; R = args[7]
     test_indices = args[8]
+    lamda = args[9]
     
     (alpha_vu, v_u, alpha_bu, b_u, alpha_tu, theta_u, v_m, b_m, theta_m, M_a, b_o) = assign_params(params,U,M,R)
 
@@ -281,24 +283,26 @@ def fprime(params, args):
         
         final_grad_bo += (rating_error - gradB_factor)*gradA_bo - gradC_bo
 
-    return numpy.concatenate(((final_grad_alpha_vu + 0.0*np.sign(alpha_vu)).flatten('F'), 
-            (final_grad_vu + 0.0*np.sign(v_u)).flatten('F'), 
-            (final_grad_alpha_bu + 0.0*np.sign(alpha_bu)).flatten('F'), 
-            (final_grad_bu + 0.0*np.sign(b_u)).flatten('F'), 
-            (final_grad_alpha_thetau + 0.0*np.sign(alpha_tu)).flatten('F'), 
-            (final_grad_thetau + 0.0*np.sign(theta_u)).flatten('F'), 
-            (final_grad_vm + 0.0*np.sign(v_m)).flatten('F'), 
-            (final_grad_b_m  + 0.0*np.sign(b_m)).flatten('F'), 
-            (final_grad_theta_m + 0.0*np.sign(theta_m)).flatten('F'), 
-            (final_grad_M_a + 0.0*np.sign(M_a)).flatten('F'),
-            (np.array([final_grad_bo]) + 0.0*np.sign(np.array([b_o]))).flatten('F')))
+    return numpy.concatenate(((final_grad_alpha_vu + lamda*np.sign(alpha_vu)).flatten('F'), 
+            (final_grad_vu + lamda*np.sign(v_u)).flatten('F'), 
+            (final_grad_alpha_bu + lamda*np.sign(alpha_bu)).flatten('F'), 
+            (final_grad_bu + lamda*np.sign(b_u)).flatten('F'), 
+            (final_grad_alpha_thetau + lamda*np.sign(alpha_tu)).flatten('F'), 
+            (final_grad_thetau + lamda*np.sign(theta_u)).flatten('F'), 
+            (final_grad_vm + lamda*np.sign(v_m)).flatten('F'), 
+            (final_grad_b_m  + lamda*np.sign(b_m)).flatten('F'), 
+            (final_grad_theta_m + lamda*np.sign(theta_m)).flatten('F'), 
+            (final_grad_M_a + lamda*np.sign(M_a)).flatten('F'),
+            (np.array([final_grad_bo]) + lamda*np.sign(np.array([b_o]))).flatten('F')))
 
 
 def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices):
     """
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
-    args = [Nums,Numas,Numa,rating_list,t_mean,U,M,R,test_indices]
+#    print('opti', params[:10])
+    lamda = 0.0  # 0.1 - 0.9677
+    args = [Nums,Numas,Numa,rating_list,t_mean,U,M,R,test_indices,lamda]
     # e = 0.001
     # sav = []
     # grad = fprime(params,args)
@@ -314,21 +318,24 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices):
 
     # np.save('mini_grad_diff.npy',sav)
     # print(max(sav))
-    learning_rate = 0.1
-    # for i in range(2):
-       # params -= learning_rate*fprime(params,args)
-       # print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
+    learning_rate = 0.00001
+    for i in range(10):
+        params -= learning_rate*fprime(params,args)
+        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list,test_indices)))
    # params,l,_ = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
    # print ('Loss: ' + str(l) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
 
 # RMSprop  
-    gamma = 0.9
-    eps = 0.00000001
-    cache = np.zeros_like(params)
-    for i in range(10):
-        grad = fprime(params,args)
-        cache = gamma*cache + (1-gamma)*(grad**2)
-        params -= learning_rate * grad / (np.sqrt(cache + eps))
-        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list,test_indices)))
+#    gamma = 0.9
+#    eps = 0.00000001
+#    lamda = 0.0
+#    
+#    args = [Nums,Numas,Numa,rating_list,t_mean,U,M,R,test_indices,lamda]
+#    print ()
+#    for i in range(10):
+#        grad = fprime(params,args)
+#        cache = gamma*cache + (1-gamma)*(grad**2)
+#        params -= learning_rate * grad / (np.sqrt(cache + eps))
+#        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list,test_indices)))
 
     return params

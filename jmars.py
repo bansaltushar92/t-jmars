@@ -72,6 +72,7 @@ def main():
                                     theta_m.flatten('F'), 
                                     M_a.flatten('F'), 
                                     np.array([b_o]).flatten('F')))
+#    cache = np.zeros_like(params)
     # Get number of users and movies
     Users = len(user_list)
     Movies = len(movie_list)
@@ -104,12 +105,13 @@ def main():
                                             word_dictionary, 
                                             t_mean, 
                                             params, test_indices)
-        # Nums = np.zeros((R,2))
-        # Numas = np.zeros((R,A,2))
-        # Numa = np.zeros((R,A))
+#        Nums = np.zeros((R,2))
+#        Numas = np.zeros((R,A,2))
+#        Numa = np.zeros((R,A))
         print('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
             params = optimizer(Nums,Numas,Numa,rating_list,t_mean,params,U,M,R,test_indices)
+#            print('main', params[:10])
             np.save('./clean_review/params.npy',params)
     
 if __name__ == "__main__":

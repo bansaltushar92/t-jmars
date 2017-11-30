@@ -1,10 +1,11 @@
 from constants import *
 import numpy as np
-from scipy.sparse import dok_matrix
+from scipy.sparse import csr_matrix
+from scipy.sparse import save_npz
 
 def dev_t(t, tu_mean):
     return np.sign(t-tu_mean)*abs(t-tu_mean)**beta
-    # return 0.0
+#    return 0.0
 
 # Joint aspect distribution
 def joint_aspect(u, m, t, t_mean_u):
@@ -119,7 +120,7 @@ class GibbsSampler:
         # Number of times y occurs with z
         self.cyz = np.zeros((self.Y, self.Z))
         # Number of times y occurs with m and w
-        self.cmyw = np.array([dok_matrix((self.Y, self.vocab_size), dtype=np.float) for _ in range(self.M)])
+        self.cmyw = np.array([csr_matrix((self.Y, self.vocab_size), dtype=np.float) for _ in range(self.M)])
         # Number of times y occurs with m
         self.cym = np.zeros((self.Y, self.M))
         # map for sentiment values
@@ -240,8 +241,8 @@ class GibbsSampler:
 
 
 
-        if w == 16 and u == 0 and m == 0:
-                print ('agg_prob_fin', aggregate_sentiment_probability(self.senti_map[0],u,m,t,t_mean_u))
+#        if w == 16 and u == 0 and m == 0:
+#                print ('agg_prob_fin', aggregate_sentiment_probability(self.senti_map[0],u,m,t,t_mean_u))
 
         # y = 2
         for z in range(self.Z):
@@ -255,8 +256,8 @@ class GibbsSampler:
                     # print ('aspect_prob', aspect_sentiment_probability(self.senti_map[s],u,m,z,t, t_mean_u))
 
 
-        if w == 16 and u == 0 and m == 0:
-            print ('aspect_prob_fin', aspect_sentiment_probability(self.senti_map[0],u,m,0,t, t_mean_u))
+#        if w == 16 and u == 0 and m == 0:
+#            print ('aspect_prob_fin', aspect_sentiment_probability(self.senti_map[0],u,m,0,t, t_mean_u))
 
         # y = 3
         # for z in range(self.Z):
@@ -283,8 +284,8 @@ class GibbsSampler:
         # Normalize
         p_z = p_z / p_z.sum()
 
-        if w == 16 and u == 0 and m == 0:
-            print ('pz', p_z, u, m, type(u), type(m))
+#        if w == 16 and u == 0 and m == 0:
+#            print ('pz', p_z, u, m, type(u), type(m))
 
         return p_z
 
@@ -354,11 +355,10 @@ class GibbsSampler:
                             self.Numa[r,z] +=1
                         
                         self.topics[(r, i)] = (y, z, s)
-            
-            print ('fit count', self.cyw[:,16])
-            print (self.Nums[:10,0], self.Numas[:10,0,0], self.Numa[:10,0])
+                save_npz('./clean_review/movie_aspects/%s'%(movie), self.cmyw[movie])
+
+            print (self.Nums[:10,0], self.Numas[:10,0,0], self.Numa[:10,0], self.cy, self.cyw[:,16])
             np.save('./clean_review/cyw.npy', self.cyw)
-            np.save('./clean_review/cmyw.npy', self.cmyw)
             np.save('./clean_review/cyzw.npy', self.cyzw)
             np.save('./clean_review/cysw.npy', self.cysw)
             np.save('./clean_review/Nums.npy', self.Nums)
