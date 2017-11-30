@@ -296,7 +296,7 @@ def fprime(params, args):
             (np.array([final_grad_bo]) + lamda*np.sign(np.array([b_o]))).flatten('F')))
 
 
-def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices):
+def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices,save_test_rmse):
     """
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
@@ -321,7 +321,9 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices):
     learning_rate = 0.00001
     for i in range(10):
         params -= learning_rate*fprime(params,args)
-        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list,test_indices)))
+        train_rmse, test_rmse = calculate_rmse(params,U,M,t_mean,rating_list,test_indices)
+        save_test_rmse.append((train_rmse, test_rmse))
+        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ', train_rmse, test_rmse)
    # params,l,_ = fmin_l_bfgs_b(func, x0=params, fprime=fprime, args=args, approx_grad=False, maxfun=1, maxiter=10)
    # print ('Loss: ' + str(l) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list)))
 
@@ -338,4 +340,4 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices):
 #        params -= learning_rate * grad / (np.sqrt(cache + eps))
 #        print ('Loss: ' + str(func(params, args)) + '------------' + 'RMSE ' + str(calculate_rmse(params,U,M,t_mean,rating_list,test_indices)))
 
-    return params
+    return params,save_test_rmse
