@@ -355,14 +355,14 @@ class GibbsSampler:
                             self.Numa[r,z] +=1
                         
                         self.topics[(r, i)] = (y, z, s)
-                save_npz('./clean_review/movie_aspects/%s'%(movie), self.cmyw[movie])
+                save_npz('./baseline_time/movie_aspects/%s'%(movie), self.cmyw[movie])
 
             print (self.Nums[:10,0], self.Numas[:10,0,0], self.Numa[:10,0], self.cy, self.cyw[:,16])
-            np.save('./clean_review/cyw.npy', self.cyw)
-            np.save('./clean_review/cyzw.npy', self.cyzw)
-            np.save('./clean_review/cysw.npy', self.cysw)
-            np.save('./clean_review/Nums.npy', self.Nums)
-            np.save('./clean_review/Numas.npy', self.Numas)
-            np.save('./clean_review/Numa.npy', self.Numa)
+            np.save('./baseline_time/cyw.npy', self.cyw)
+            np.save('./baseline_time/cyzw.npy', self.cyzw)
+            np.save('./baseline_time/cysw.npy', self.cysw)
+            np.save('./baseline_time/Nums.npy', self.Nums)
+            np.save('./baseline_time/Numas.npy', self.Numas)
+            np.save('./baseline_time/Numa.npy', self.Numa)
             return (self.Nums, self.Numas, self.Numa)
         

@@ -18,8 +18,9 @@ def main():
     # nltk.download('all')
 
     # Read 
+    np.random.seed(5)
     imdb = Indexer()
-    imdb_file = 'data/clothing_data_small.json'
+    imdb_file = 'data/clothing_data.json'
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     logging.info('Reading file %s' % imdb_file)
     imdb.read_file(imdb_file)
@@ -39,27 +40,28 @@ def main():
         U, M, R, test_indices) = imdb.get_mappings()
     
 
+    mul_factor = 0.1
     ## Initialize
-    alpha_vu = np.random.normal(0,sigma_u,(U, K)) * 0.1
-    alpha_bu = np.random.normal(0,sigma_u,(U, 1)) * 0.1
-    alpha_tu = np.random.normal(0,sigma_u,(U, A)) * 0.1
+    alpha_vu = np.random.normal(0,sigma_u,(U, K)) * mul_factor
+    alpha_bu = np.random.normal(0,sigma_u,(U, 1)) * mul_factor
+    alpha_tu = np.random.normal(0,sigma_u,(U, A)) * mul_factor
     
     
     # User
-    v_u = np.random.normal(0,sigma_u,(U, K)) * 0.1      # Latent factor vector
-    b_u = np.random.normal(0,sigma_bu,(U, 1)) * 0.1      # Common bias vector
-    theta_u = np.random.normal(0,sigma_ua,(U, A)) * 0.1  # Aspect specific vector
+    v_u = np.random.normal(0,sigma_u,(U, K)) * mul_factor      # Latent factor vector
+    b_u = np.random.normal(0,sigma_bu,(U, 1)) * mul_factor      # Common bias vector
+    theta_u = np.random.normal(0,sigma_ua,(U, A)) * mul_factor  # Aspect specific vector
     
     # Movie
-    v_m = np.random.normal(0,sigma_m,(M, K)) * 0.1      # Latent factor vector
-    b_m = np.random.normal(0,sigma_bm,(M, 1)) * 0.1      # Common bias vector
-    theta_m = np.random.normal(0,sigma_ma,(M, A)) * 0.1  # Aspect specific vector
+    v_m = np.random.normal(0,sigma_m,(M, K)) * mul_factor      # Latent factor vector
+    b_m = np.random.normal(0,sigma_bm,(M, 1)) * mul_factor      # Common bias vector
+    theta_m = np.random.normal(0,sigma_ma,(M, A)) * mul_factor  # Aspect specific vector
     
     # Common bias
-    b_o = np.random.normal(0,sigma_b0)  * 0.1
+    b_o = np.random.normal(0,sigma_b0)  * mul_factor
     
     # Scaling Matrix
-    M_a = np.random.normal(0,sigma_Ma,(A, K))  * 0.1
+    M_a = np.random.normal(0,sigma_Ma,(A, K))  * mul_factor
     
     params = numpy.concatenate((alpha_vu.flatten('F'), 
                                     v_u.flatten('F'), 
@@ -97,24 +99,24 @@ def main():
         print('Running iteration %d of Gibbs EM' % it)
         print('Running E-Step - Gibbs Sampling')
 
-        Nums,Numas,Numa = gibbs_sampler.run(vocab_size, 
-                                            review_matrix, 
-                                            rating_list, 
-                                            user_dict, 
-                                            movie_dict, 
-                                            movie_reviews, 
-                                            word_dictionary, 
-                                            t_mean, 
-                                            params, test_indices)
-#        Nums = np.zeros((R,2))
-#        Numas = np.zeros((R,A,2))
-#        Numa = np.zeros((R,A))
+#        Nums,Numas,Numa = gibbs_sampler.run(vocab_size, 
+#                                            review_matrix, 
+#                                            rating_list, 
+#                                            user_dict, 
+#                                            movie_dict, 
+#                                            movie_reviews, 
+#                                            word_dictionary, 
+#                                            t_mean, 
+#                                            params, test_indices)
+        Nums = np.zeros((R,2))
+        Numas = np.zeros((R,A,2))
+        Numa = np.zeros((R,A))
         print('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
             params,save_test_rmse = optimizer(Nums,Numas,Numa,rating_list,t_mean,params,U,M,R,test_indices,save_test_rmse)
 #            print('main', params[:10])
-            np.save('./clean_review/params.npy',params)
-            np.save('./clean_review/performance.npy',save_test_rmse)
+            np.save('./baseline_time/params.npy',params)
+            np.save('./baseline_time/performance_notime_medium_noreg_seed5.npy',save_test_rmse)
     
 if __name__ == "__main__":
     main()

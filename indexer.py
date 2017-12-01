@@ -4,7 +4,6 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import numpy as np
 from collections import defaultdict
-import random
 import string
 from nltk.stem.porter import PorterStemmer
 
@@ -90,12 +89,12 @@ class Indexer:
             #arr = clean_review(temp)
 
         
-        
+        np.random.seed(5)
         review_map = list()
         movie_reviews = [[] for o in range(len(movie_dict))]
         
         indices = [i for i in range(len(self.reviews))]
-        random.shuffle(indices)
+        np.random.shuffle(indices)
         test_indices = {idx:1 for idx in indices[int(0.8*len(indices)):]}
         
         for index in range(len(self.reviews)):
@@ -121,5 +120,5 @@ class Indexer:
         review_matrix = np.array(review_matrix)
          
         print(len(self.reviews))
-        np.save('./clean_review/word_dictionary.npy', [(k,word_dictionary[k]) for k in word_dictionary])
+        np.save('./baseline_time/word_dictionary.npy', [(k,word_dictionary[k]) for k in word_dictionary])
         return (vocab_size, user_list, movie_list, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary,nu,nm,len(self.reviews), test_indices)

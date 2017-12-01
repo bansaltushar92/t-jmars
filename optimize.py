@@ -300,6 +300,7 @@ def optimizer(Nums,Numas,Numa,rating_list,t_mean, params,U,M,R,test_indices,save
     """
     Computes the optimal values for the parameters required by the JMARS model using lbfgs
     """
+    
 #    print('opti', params[:10])
     lamda = 0.0  # 0.1 - 0.9677
     args = [Nums,Numas,Numa,rating_list,t_mean,U,M,R,test_indices,lamda]
