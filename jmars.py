@@ -20,7 +20,7 @@ def main():
     # Read 
     np.random.seed(5)
     imdb = Indexer()
-    imdb_file = 'data/clothing_data.json'
+    imdb_file = 'data/clothing_data_small.json'
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
     logging.info('Reading file %s' % imdb_file)
     imdb.read_file(imdb_file)
@@ -99,24 +99,23 @@ def main():
         print('Running iteration %d of Gibbs EM' % it)
         print('Running E-Step - Gibbs Sampling')
 
-#        Nums,Numas,Numa = gibbs_sampler.run(vocab_size, 
-#                                            review_matrix, 
-#                                            rating_list, 
-#                                            user_dict, 
-#                                            movie_dict, 
-#                                            movie_reviews, 
-#                                            word_dictionary, 
-#                                            t_mean, 
-#                                            params, test_indices)
-        Nums = np.zeros((R,2))
-        Numas = np.zeros((R,A,2))
-        Numa = np.zeros((R,A))
+        Nums,Numas,Numa = gibbs_sampler.run(vocab_size, 
+                                            review_matrix, 
+                                            rating_list, 
+                                            user_dict, 
+                                            movie_dict, 
+                                            movie_reviews, 
+                                            word_dictionary, 
+                                            t_mean, 
+                                            params, test_indices)
+#        Nums = np.zeros((R,2))
+#        Numas = np.zeros((R,A,2))
+#        Numa = np.zeros((R,A))
         print('Running M-Step - Gradient Descent')
         for i in range(1,MAX_OPT_ITER+1):
             params,save_test_rmse = optimizer(Nums,Numas,Numa,rating_list,t_mean,params,U,M,R,test_indices,save_test_rmse)
-#            print('main', params[:10])
-            np.save('./baseline_time/params.npy',params)
-            np.save('./baseline_time/performance_notime_medium_noreg_seed5.npy',save_test_rmse)
+            np.save('./test/params.npy',params)
+            np.save('./test/performance_notime_medium_noreg_seed5.npy',save_test_rmse)
     
 if __name__ == "__main__":
     main()

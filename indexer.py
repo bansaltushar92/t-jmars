@@ -49,14 +49,14 @@ class Indexer:
         t_count = defaultdict(int)
         
         for review in self.reviews:
-            user = review['reviewerID'] #['user']
+            user = review['reviewerID']
             if user not in user_dict:
                 nu = len(user_dict.keys())
                 user_dict[user] = nu
                 t_sum[user] += review['unixReviewTime']
                 t_count[user] += 1
             
-            movie = review['asin'] #['movie']
+            movie = review['asin']
             if movie not in movie_dict:
                 nm = len(movie_dict.keys())
                 movie_dict[movie] = nm
@@ -78,15 +78,6 @@ class Indexer:
         word_dictionary = dict()
         review_matrix = list()
         word_index = 0
-#        for review in self.reviews:
-#            if type(review['review']) == str:
-#                temp = review['review']
-#            else:
-#                try:
-#                    temp = review['review']['review']
-#                except:
-#                    continue
-            #arr = clean_review(temp)
 
         
         np.random.seed(5)
@@ -101,8 +92,8 @@ class Indexer:
             temp = clean_review(self.reviews[index]['reviewText'])
             review_map.append(
             {
-                'user' : self.reviews[index]['reviewerID'],  #['user'],
-                'movie' : self.reviews[index]['asin']  #['movie']
+                'user' : self.reviews[index]['reviewerID'],
+                'movie' : self.reviews[index]['asin']
             })
             
             movie_reviews[movie_dict[self.reviews[index]['asin']]].append((temp, index))
@@ -120,5 +111,5 @@ class Indexer:
         review_matrix = np.array(review_matrix)
          
         print(len(self.reviews))
-        np.save('./baseline_time/word_dictionary.npy', [(k,word_dictionary[k]) for k in word_dictionary])
+        np.save('./test/word_dictionary.npy', [(k,word_dictionary[k]) for k in word_dictionary])
         return (vocab_size, user_list, movie_list, review_matrix, review_map, user_dict, movie_dict, rating_list, t_mean, movie_reviews, word_dictionary,nu,nm,len(self.reviews), test_indices)

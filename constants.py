@@ -30,5 +30,8 @@ S = 2
 sigma_ua = 0.1
 sigma_ma = 0.1
 
-beta=0.000085   ## 0.000085->0.9685200892186474
+## coefficient for temporal dynamics
+beta=0.000085
+
+## weight for squared rating error
 epsilon = 5
